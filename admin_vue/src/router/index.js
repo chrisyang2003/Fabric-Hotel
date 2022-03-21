@@ -153,7 +153,7 @@ export const asyncRoutes = [
         path: 'index',
         component: () => import('@/views/rooms/index'),
         name: 'room',
-        meta: { title: 'Room', icon: 'tab' }
+        meta: { title: 'Room | 房间管理', icon: 'tab' }
       }
     ]
   },

@@ -1,6 +1,6 @@
 <template>
   <el-table :data="list" style="width: 100%;padding-top: 15px;">
-    <el-table-column label="交易哈希" min-width="200">
+    <el-table-column label="最近交易哈希" min-width="200">
       <template slot-scope="scope">
         {{ scope.row.order_no | orderNoFilter }}
       </template>
@@ -47,7 +47,7 @@ export default {
   methods: {
     fetchData() {
       transactionList().then(response => {
-        this.list = response.data.items.slice(0, 8)
+        this.list = response.data.items.slice(0, 6)
       })
     }
   }

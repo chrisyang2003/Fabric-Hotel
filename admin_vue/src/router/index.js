@@ -79,8 +79,7 @@ export const constantRoutes = [
         path: 'dashboard',
         component: () => import('@/views/dashboard/index'),
         name: 'Dashboard',
-        meta: { title: '主页', icon: 'dashboard', affix: true },
-        hidden: true
+        meta: { title: '面板主页', icon: 'dashboard', affix: true },
       }
     ]
   },
@@ -154,6 +153,18 @@ export const asyncRoutes = [
         component: () => import('@/views/rooms/index'),
         name: 'room',
         meta: { title: 'Room | 房间管理', icon: 'tab' }
+      }
+    ]
+  },
+  {
+    path: '/transaction',
+    component: Layout,
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/transaction/index'),
+        name: 'room',
+        meta: { title: 'Trx | 交易列表', icon: 'tab' }
       }
     ]
   },

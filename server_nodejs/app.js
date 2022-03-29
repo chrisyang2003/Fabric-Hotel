@@ -1,20 +1,41 @@
-'use strict';
+var createError = require('http-errors');
+var express = require('express');
+var path = require('path');
+var cookieParser = require('cookie-parser');
+var logger = require('morgan');
 
-module.exports = app => {
-  app.beforeStart(async () => {
-    const ctx = app.createAnonymousContext();
+var indexRouter = require('./routes/index');
+var usersRouter = require('./routes/users');
 
-    // 初始化延迟任务
-    app.initDelayTask();
+var app = express();
 
-    // 创建订单过期自动取消任务
-    app.registerTaskHandler('cancelOrder', async uuid => {
-      const goodsOrder = await ctx.service.goodsOrder.getByUuid(uuid);
+// view engine setup
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'jade');
 
-      if (goodsOrder.status === 'initial') {
-        await ctx.service.goodsOrder.cancel(goodsOrder.dataValues);
-        console.log(`过期自动取消订单: uuid=${uuid}`);
-      }
-    });
-  });
-};
+app.use(logger('dev'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.use('/', indexRouter);
+app.use('/users', usersRouter);
+
+// catch 404 and forward to error handler
+app.use(function(req, res, next) {
+  next(createError(404));
+});
+
+// error handler
+app.use(function(err, req, res, next) {
+  // set locals, only providing error in development
+  res.locals.message = err.message;
+  res.locals.error = req.app.get('env') === 'development' ? err : {};
+
+  // render the error page
+  res.status(err.status || 500);
+  res.render('error');
+});
+
+module.exports = app;

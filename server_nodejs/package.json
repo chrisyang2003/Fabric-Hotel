@@ -2,43 +2,45 @@
   "name": "server_nodejs",
   "version": "1.0.0",
   "description": "",
+  "private": true,
+  "egg": {
+    "declarations": true
+  },
   "dependencies": {
-    "egg": "2.10.0",
-    "egg-sequelize": "^4.0.2",
-    "egg-scripts": "^2.5.0"
+    "egg": "^2.15.1",
+    "egg-scripts": "^2.11.0"
   },
   "devDependencies": {
     "autod": "^3.0.1",
-    "autod-egg": "^1.0.0",
-    "egg-bin": "^4.3.7",
-    "egg-mock": "^3.19.2",
-    "eslint": "^4.18.1",
-    "eslint-config-egg": "^7.0.0",
-    "factory-girl": "^5.0.2",
-    "sequelize-cli": "^4.0.0"
+    "autod-egg": "^1.1.0",
+    "egg-bin": "^4.11.0",
+    "egg-ci": "^1.11.0",
+    "egg-mock": "^3.21.0",
+    "eslint": "^5.13.0",
+    "eslint-config-egg": "^7.1.0"
   },
   "engines": {
-    "node": ">=8.0.0"
+    "node": ">=10.0.0"
   },
   "scripts": {
-    "autod": "autod",
-    "lint": "eslint .",
-    "test": "egg-bin test",
+    "start": "egg-scripts start --daemon --title=egg-server-server_nodejs",
+    "stop": "egg-scripts stop --title=egg-server-server_nodejs",
+    "dev": "egg-bin dev",
+    "debug": "egg-bin debug",
+    "test": "npm run lint -- --fix && npm run test-local",
+    "test-local": "egg-bin test",
     "cov": "egg-bin cov",
-    "ci": "npm run lint && NODE_ENV=test npx sequelize db:migrate && npm run cov"
+    "lint": "eslint .",
+    "ci": "npm run lint && npm run cov",
+    "autod": "autod"
   },
   "ci": {
-    "version": "8"
+    "version": "10"
   },
-  "eslintIgnore": [ "coverage", "dist" ],
   "repository": {
     "type": "git",
     "url": ""
   },
-  "files": [
-    "lib",
-    "index.js"
-  ],
-  "author": "",
-  "private": true
+  "author": "chrisyy",
+  "license": "MIT"
 }

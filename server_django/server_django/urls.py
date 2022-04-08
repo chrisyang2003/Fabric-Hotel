@@ -6,5 +6,5 @@ urlpatterns = [
     path('hello/', hello),
 
 
-    
+
 ]

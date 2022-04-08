@@ -8,9 +8,10 @@
 		</view>
 		<view class="hoter-list u-p-t-30 u-p-l-30 u-p-r-30">
 			<view class="item bg-white u-m-b-30" v-for="(item, index) in list" :key="index" @click="goPage('/pages/hotel/detail?id=' + item.id)">
-				<view class="collect u-flex u-row-center u-col-bottom" @click.stop="collect(item.id, index, item.isCollect)">
+				<!-- 收藏 -->
+				<!-- <view class="collect u-flex u-row-center u-col-bottom" @click.stop="collect(item.id, index, item.isCollect)">
 					<u-icon :name="!item.isCollect ? 'heart' : 'heart-fill'" :color="!item.isCollect ? '#ffffff' : '#ff393c'" size="40"></u-icon>
-				</view>
+				</view> -->
 				<!-- :style="[{background:theme.bgColor}]" -->
 				<view class="type_name">{{ item.type_name }}</view>
 				<view class="images">

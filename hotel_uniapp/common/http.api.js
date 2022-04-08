@@ -71,10 +71,10 @@ const install = (Vue, vm) => {
 
 
 	// 免登录接口
-	vm.$api.config 				= async (params = {}) => await vm.$u.get('http://chrisyy.top:4000/addons/booking/common/init', params);
+	vm.$api.config 				= async (params = {}) => await vm.$u.get('http://127.0.0.1:8000/addons/booking/common/init', params);
 	vm.$api.mapSearch 			= async (params = {}) => await vm.$u.get('http://chrisyy.top:5000/addons/booking/common/mapSearch', params);
 
-	vm.$api.getDefaultStore	    = async (params = {}) => await vm.$u.get('http://chrisyy.top:4000/addons/booking/store/defaultStore', params);
+	vm.$api.getDefaultStore	    = async (params = {}) => await vm.$u.get('http://127.0.0.1:8000/addons/booking/store/defaultStore', params);
 
 
 	// #ifdef APP-PLUS	
@@ -88,14 +88,14 @@ const install = (Vue, vm) => {
 	vm.$api.getCondition		= async (params = {}) => await vm.$u.get('http://chrisyy.top:5000/addons/booking/house/condition', params);
 
 	// 获取用户余额
-	vm.$api.getBalance			= async (params = {}) => await vm.$u.get('http://chrisyy.top:5000/api/my/balance', params);
+	vm.$api.getBalance			= async (params = {}) => await vm.$u.get('http://127.0.0.1:8000/api/my/balance', params);
 
 	// 房间列表
-	vm.$api.houseList			= async (params = {}) => await vm.$u.get('http://chrisyy.top:4000/addons/booking/house/houseList', params);
+	vm.$api.houseList			= async (params = {}) => await vm.$u.get('http://127.0.0.1:8000/addons/booking/house/houseList', params);
 	// 房间详情
-	vm.$api.houseDetail			= async (params = {}) => await vm.$u.get('http://chrisyy.top:4000/addons/booking/house/detail', params);
+	vm.$api.houseDetail			= async (params = {}) => await vm.$u.get('http://127.0.0.1:8000/addons/booking/house/detail', params);
 	// 房间预定
-	vm.$api.houseBooking		= async (params = {}) => await vm.$u.post('http://chrisyy.top:4000/addons/booking/house/booking', params);
+	vm.$api.houseBooking		= async (params = {}) => await vm.$u.post('http://127.0.0.1:8000/addons/booking/house/booking', params);
 	vm.$api.lodgerList			= async (params = {}) => await vm.$u.get('http://chrisyy.top:5000/addons/booking/house/lodgerList', params);
 	vm.$api.delLodger			= async (params = {}) => await vm.$u.post('http://chrisyy.top:5000/addons/booking/house/delLodger', params);
 	vm.$api.getLodger			= async (params = {}) => await vm.$u.get('http://chrisyy.top:5000/addons/booking/house/getLodger', params);
@@ -112,7 +112,7 @@ const install = (Vue, vm) => {
 	vm.$api.optionCollect		= async (params = {}) => await vm.$u.post('http://chrisyy.top:5000/addons/booking/collect/optionCollect', params);
 	vm.$api.collectList	    	= async (params = {}) => await vm.$u.get('http://chrisyy.top:5000/addons/booking/collect/collectList', params);
 	vm.$api.storeList	    	= async (params = {}) => await vm.$u.get('http://chrisyy.top:5000/addons/booking/store/storeList', params);
-	vm.$api.storeDetail	    	= async (params = {}) => await vm.$u.get('http://chrisyy.top:4000/addons/booking/store/detail', params);
+	vm.$api.storeDetail	    	= async (params = {}) => await vm.$u.get('http://127.0.0.1:8000/addons/booking/store/detail', params);
 	vm.$api.cutStore	    	= async (params = {}) => await vm.$u.post('http://chrisyy.top:5000/addons/booking/store/cutStore', params);
 	vm.$api.teasingTag 			= async (params = {}) => await vm.$u.get('http://chrisyy.top:5000/addons/booking/teasing/teasingTag', params);
 	vm.$api.teasingList 		= async (params = {}) => await vm.$u.get('http://chrisyy.top:5000/addons/booking/teasing/teasingList', params);

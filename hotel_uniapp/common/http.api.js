@@ -95,13 +95,16 @@ const install = (Vue, vm) => {
 	// 房间详情
 	vm.$api.houseDetail			= async (params = {}) => await vm.$u.get('http://127.0.0.1:8000/addons/booking/house/detail', params);
 	// 房间预定
-	vm.$api.houseBooking		= async (params = {}) => await vm.$u.post('http://127.0.0.1:8000/addons/booking/house/booking', params);
-	vm.$api.lodgerList			= async (params = {}) => await vm.$u.get('http://chrisyy.top:5000/addons/booking/house/lodgerList', params);
+	vm.$api.houseBooking		= async (params = {}) => await vm.$u.get('http://127.0.0.1:8000/addons/booking/house/booking', params);
+	vm.$api.lodgerList			= async (params = {}) => await vm.$u.get('http://127.0.0.1:8000/addons/booking/house/lodgerList', params);
 	vm.$api.delLodger			= async (params = {}) => await vm.$u.post('http://chrisyy.top:5000/addons/booking/house/delLodger', params);
 	vm.$api.getLodger			= async (params = {}) => await vm.$u.get('http://chrisyy.top:5000/addons/booking/house/getLodger', params);
 	vm.$api.getMonthHouse		= async (params = {}) => await vm.$u.get('http://chrisyy.top:5000/addons/booking/house/monthHouse', params);
 	vm.$api.addOrEditLodger		= async (params = {}) => await vm.$u.post('http://chrisyy.top:5000/addons/booking/house/addOrEditLodger', params);
-	vm.$api.addOrder			= async (params = {}) => await vm.$u.post('http://chrisyy.top:5000/addons/booking/order/add', params);
+	vm.$api.addOrder			= async (params = {}) => {
+		console.log()
+		return await vm.$u.post('http://chrisyy.top:5000/addons/booking/order/add', params);
+	}
 	vm.$api.orderDetail			= async (params = {}) => await vm.$u.get('http://chrisyy.top:5000/addons/booking/order/detail', params);
 	vm.$api.orderList			= async (params = {}) => await vm.$u.get('http://chrisyy.top:5000/addons/booking/order/orderList', params);
 	vm.$api.orderPay			= async (params = {}) => await vm.$u.post('http://chrisyy.top:5000/addons/booking/order/pay', params);

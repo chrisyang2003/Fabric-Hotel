@@ -12,7 +12,9 @@
 				@scrolltolower="lower"
 				@scroll="scrolls"
 			>
-				<view class="u-skeleton-fillet"><u-swiper :list="info.images" height="400" border-radius="0"></u-swiper></view>
+				<view class="u-skeleton-fillet">
+					<u-swiper :list="[info.image]" height="400" border-radius="0"></u-swiper>
+					</view>
 				<view class="u-border-bottom" :style="[stickyStyle]">
 					<!-- #ifndef MP-BAIDU -->
 					<u-tabs :list="tabList" height="90" :active-color="theme.bgColor" :is-scroll="false" :current="current" @change="change"></u-tabs>
@@ -39,7 +41,7 @@
 						<view class="u-p-t-30 u-p-b-30 u-skeleton-rect"><text v-text="info.intro"></text></view>
 					</view>
 
-					<view class="bg-white u-m-t-15 u-p-30" v-if="info.coupon && info.coupon.length>0">
+					<!-- <view class="bg-white u-m-t-15 u-p-30" v-if="info.coupon && info.coupon.length>0">
 						<view class="u-m-b-30 u-font-30 text-weight">优惠</view>
 						<view class="coupon-list u-flex u-row-between" @click="show_coupon = true">
 							<view class="u-flex u-flex-1">
@@ -63,7 +65,7 @@
 								<u-icon name="arrow-right-double"></u-icon>
 							</view>
 						</view>
-					</view>
+					</view> -->
 
 					<view class="bg-white u-p-30 map u-skeleton-rect u-m-t-15" id="map" v-if="info.store && info.store.latitude">
 						<view class="u-m-b-30 u-font-30 text-weight">位置</view>
@@ -89,7 +91,7 @@
 
 					<view class="bg-white u-p-30 u-m-t-15 u-skeleton-rect" id="comment">
 						<view class="u-m-b-15 text-weight u-font-30">评价</view>
-						<view class="u-u-p-t-30 u-p-b-30" v-if="!commentList.length"><u-empty mode="history" text="暂无更多评论"></u-empty></view>
+						<!-- <view class="u-u-p-t-30 u-p-b-30" v-if="!commentList.length"><u-empty mode="history" text="暂无更多评论"></u-empty></view>
 						<view class="comment u-border-bottom" v-for="(res, index) in commentList" :key="res.id">
 							<view class="left"><image :src="res.user.avatar" mode="aspectFill"></image></view>
 							<view class="right">
@@ -117,7 +119,7 @@
 						>
 							<text class="u-m-r-10">更多评论</text>
 							<u-icon name="arrow-right-double"></u-icon>
-						</view>
+						</view> -->
 					</view>
 
 					<view class="bg-white u-p-30 u-m-t-15 facility u-skeleton-rect" id="facility">
@@ -134,38 +136,24 @@
 					</view>
 
 					<view class="bg-white u-p-30 u-m-t-15 notesin u-skeleton-rect" id="notesin">
-						<view class="u-m-b-30 text-weight u-font-30">预订须知</view>
+						<view class="u-m-b-30 text-weight u-font-30">预订提示</view>
 						<view class="">
 							<view class="item u-flex">
 								<view class="u-tips-color">预订房型：</view>
-								<view class="">{{ info.type && info.type.name }}</view>
+								<view class="">{{ info.name }}</view>
 							</view>
 							<view class="item u-flex">
 								<view class="u-tips-color">入离时间：</view>
-								<view class="">{{ info.checkin_time | formatTimes }} 后入住，{{ info.checkout_time | formatTimes }} 前退房</view>
+								<view class="">15:00:00 后入住, 12:00:00前退房</view>
 							</view>
 							<view class="item u-flex">
 								<view class="u-tips-color">预订时长：</view>
-								<view class="">随时可预订,最少预订1天, 最多预订天数不限</view>
-							</view>
-							<view class="item u-flex u-col-top">
-								<view class="u-tips-color">其他须知：</view>
-								<view class="other">
-									<view class="row u-flex-1" v-for="(item, index) in info.notes_in" :key="index">
-										<u-icon name="checkmark-circle" :color="theme.bgColor" v-if="item.has == 1"></u-icon>
-										<u-icon name="close-circle" color="#ccc" v-else></u-icon>
-										<text class="u-m-l-10" v-text="item.content"></text>
-									</view>
-								</view>
+								<view class="">最少预订1天, 最多预订天数不限</view>
 							</view>
 						</view>
 					</view>
-					<view class="bg-white u-p-30 u-m-t-15">
-						<view class="u-m-b-30 text-weight u-font-30">详情</view>
-						<u-parse :html="info.content"></u-parse>
-					</view>
 					<!-- 自定义字段 -->
-					<view class="u-skeleton-rect" id="field"><fa-fields :fields="info.fields"></fa-fields></view>
+					<!-- <view class="u-skeleton-rect" id="field"><fa-fields :fields="info.fields"></fa-fields></view> -->
 				</view>
 
 				<view class="foot-bar" id="footbar" v-if="!loading">
@@ -181,7 +169,7 @@
 					</view>
 					<view class="u-flex u-row-between u-m-t-20">
 						<view class="">
-							<text class="price u-font-35">￥{{ calendar.amount ? calendar.amount : info.price }}</text>
+							<text class="price u-font-35">￥{{ calendar.amount ? calendar.amount : info.market_price}}</text>
 						</view>
 						<view class="u-flex">
 							<u-button :custom-style="{ backgroundColor: theme.bgColor, color: theme.color }" hover-class="none" size="medium" @click="toBooking">

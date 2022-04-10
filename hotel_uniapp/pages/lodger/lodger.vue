@@ -10,6 +10,8 @@
 					<view class="u-p-l-30">
 						<view class="">姓名：{{ item.name }}</view>
 						<view class="u-tips-color">证件号码：{{ item.idnumber }}</view>
+						<view class="u-tips-color">年龄：{{ item.age }}</view>
+
 					</view>
 				</u-checkbox>
 			</view>

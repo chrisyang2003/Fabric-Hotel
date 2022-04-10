@@ -9,7 +9,7 @@
           <div class="card-panel-text">
             顾客数
           </div>
-          <count-to :start-val="0" :end-val="102400" :duration="2600" class="card-panel-num" />
+          <count-to :start-val="0" :end-val="newVisitis" :duration="2600" class="card-panel-num" />
         </div>
       </div>
     </el-col>
@@ -22,7 +22,7 @@
           <div class="card-panel-text">
             消息
           </div>
-          <count-to :start-val="0" :end-val="81212" :duration="3000" class="card-panel-num" />
+          <count-to :start-val="0" :end-val="message" :duration="3000" class="card-panel-num" />
         </div>
       </div>
     </el-col>
@@ -35,7 +35,7 @@
           <div class="card-panel-text">
             营业额
           </div>
-          <count-to :start-val="0" :end-val="9280" :duration="3200" class="card-panel-num" />
+          <count-to :start-val="0" :end-val="purchases" :duration="3200" class="card-panel-num" />
         </div>
       </div>
     </el-col>
@@ -48,7 +48,7 @@
           <div class="card-panel-text">
             房间总数
           </div>
-          <count-to :start-val="0" :end-val="13600" :duration="3600" class="card-panel-num" />
+          <count-to :start-val="0" :end-val="hotels" :duration="3600" class="card-panel-num" />
         </div>
       </div>
     </el-col>
@@ -57,8 +57,18 @@
 
 <script>
 import CountTo from 'vue-count-to'
+import { init } from '@/api/init'
+
 
 export default {
+  data(){
+    return {
+      newVisitis:0,
+      message:0,
+      purchases:0,
+      hotels:0,
+    }
+  },
   components: {
     CountTo
   },
@@ -66,7 +76,15 @@ export default {
     handleSetLineChartData(type) {
       this.$emit('handleSetLineChartData', type)
     }
-  }
+  },
+  created() {
+    init().then(response => {
+      this.newVisitis = response.data.newVisitis
+      this.message = response.data.message
+      this.purchases = response.data.purchases
+      this.hotels = response.data.hotels
+    })
+  },
 }
 </script>
 

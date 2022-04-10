@@ -13,21 +13,21 @@
 					<u-icon :name="!item.isCollect ? 'heart' : 'heart-fill'" :color="!item.isCollect ? '#ffffff' : '#ff393c'" size="40"></u-icon>
 				</view> -->
 				<!-- :style="[{background:theme.bgColor}]" -->
-				<view class="type_name">{{ item.type_name }}</view>
+				<!-- <view class="type_name">{{ item.type_name }}</view> -->
 				<view class="images">
-					<fa-swiper :list="item.images" :autoplay="false" :params="{ id: item.id }" :height="400" mode="none" @click="clickSwiper"></fa-swiper>
+					<fa-swiper :list="[item.image]" :autoplay="false" :params="{ id: item.id }" :height="400" mode="none" @click="clickSwiper"></fa-swiper>
 					<view class="title u-line-1 u-font-35" v-text="item.name"></view>
 				</view>
 				<view class="">
 					<view class="u-p-t-20 u-p-l-20 u-p-r-20 u-flex u-flex-wrap">
-						<view class="u-m-r-10 u-m-b-10" v-for="(res, ids) in item.tag_names" :key="ids">
+						<view class="u-m-r-10 u-m-b-10" v-for="(res, ids) in item.tag" :key="ids">
 							<u-tag :text="res" :bg-color="theme.lightColor" :border-color="theme.faBorderColor" :color="theme.bgColor" size="mini" mode="light" />
 						</view>
 					</view>
 					<view class="u-flex u-row-between u-p-20 u-text-right">
 						<view class="u-font-35 u-m-b-15">
-							<text class="price">￥{{ item.house_price }}/晚</text>
-							<text class="market_price u-font-24 u-tips-color">￥{{ item.market_price }}/晚</text>
+							<text class="price">￥{{ item.market_price }}/晚</text>
+							<text class="market_price u-font-24 u-tips-color">￥{{ item.house_price }}/晚</text>
 						</view>
 						<view class="">
 							<u-button

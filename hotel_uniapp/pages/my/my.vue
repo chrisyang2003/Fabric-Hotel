@@ -50,7 +50,7 @@
 				<!-- <u-cell-item icon="pushpin-fill" title="每日一签" @click="toSignin"></u-cell-item>				 -->
 				<!-- <u-cell-item icon="heart-fill" title="我的收藏" @click="goPage('/pages/my/collect',true)"></u-cell-item> -->
 				<u-cell-item icon="edit-pen" title="留言板" @click="goPage('/pages/my/feedback',true)"></u-cell-item>
-				<u-cell-item icon="account-fill" title="个人资料" @click="goPage('/pages/my/profile',true)"></u-cell-item>
+				<!-- <u-cell-item icon="account-fill" title="个人资料" @click="goPage('/pages/my/profile',true)"></u-cell-item> -->
 				<!-- <u-cell-item icon="coupon" title="我的优惠券" @click="goPage('/pages/coupon/user',true)"></u-cell-item> -->
 				<u-cell-item icon="backspace" v-if="vuex_token" title="退出登录" @click="goPage('out')"></u-cell-item>
 			</u-cell-group>

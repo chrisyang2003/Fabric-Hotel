@@ -1,41 +1,26 @@
 import request from '@/utils/request'
 
-export function fetchRoomList(query) {
+export function fetchList(query) {
   return request({
-    url: '/vue-element-admin/article/list',
+    url: '/addons/booking/house/houseList',
     method: 'get',
     params: query
   })
 }
 
-// export function fetchArticle(id) {
-//   return request({
-//     url: '/vue-element-admin/article/detail',
-//     method: 'get',
-//     params: { id }
-//   })
-// }
 
-// export function fetchPv(pv) {
-//   return request({
-//     url: '/vue-element-admin/article/pv',
-//     method: 'get',
-//     params: { pv }
-//   })
-// }
+export function createHouse(data) {
+  return request({
+    url: '/addons/booking/house/add',
+    method: 'get',
+    params: data
+  })
+}
 
-// export function createArticle(data) {
-//   return request({
-//     url: '/vue-element-admin/article/create',
-//     method: 'post',
-//     data
-//   })
-// }
-
-// export function updateArticle(data) {
-//   return request({
-//     url: '/vue-element-admin/article/update',
-//     method: 'post',
-//     data
-//   })
-// }
+export function updateArticle(data) {
+  return request({
+    url: '/vue-element-admin/article/update',
+    method: 'post',
+    data
+  })
+}

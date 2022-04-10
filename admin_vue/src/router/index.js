@@ -163,7 +163,7 @@ export const asyncRoutes = [
       {
         path: 'index',
         component: () => import('@/views/transaction/index'),
-        name: 'room',
+        name: 'transaction',
         meta: { title: 'Trx | 交易列表', icon: 'tab' }
       }
     ]

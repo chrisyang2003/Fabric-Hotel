@@ -4,12 +4,10 @@
 		<fa-navbar title="提交订单" :border-bottom="false"></fa-navbar>
 		<view class="u-skeleton">
 			<view class="u-flex bg-white u-m-30 u-p-30 detail">
-				<image class="u-skeleton-rect thumb" :src="info.images && info.images.length > 0 ? info.images[0] : ''" mode="aspectFill"></image>
+				<image class="u-skeleton-rect thumb" :src="info.image" mode="aspectFill"></image>
 				<view class="u-skeleton-rect info u-p-l-30">
 					<view class="text-weight u-flex-1 u-line-2" v-text="info.name"></view>
 					<view class="u-tips-color u-flex">
-						<text>{{ info.type && info.type.name }}</text>
-						<text class="u-m-l-10 u-m-r-10 u-font-40">·</text>
 						<text>{{ info.area }}㎡</text>
 						<text class="u-m-l-10 u-m-r-10 u-font-40">·</text>
 						<text>宜住{{ info.livenums }}人</text>

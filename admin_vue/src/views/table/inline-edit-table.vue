@@ -113,7 +113,9 @@ export default {
       this.list = items.map(v => {
         this.$set(v, 'edit', false) // https://vuejs.org/v2/guide/reactivity.html
         v.originalTitle = v.title //  will be used when user click the cancel botton
+
         return v
+        
       })
       this.listLoading = false
     },
@@ -121,7 +123,7 @@ export default {
       row.title = row.originalTitle
       row.edit = false
       this.$message({
-        message: 'The title has been restored to the original value',
+        message: 'original value',
         type: 'warning'
       })
     },

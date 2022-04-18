@@ -9,6 +9,7 @@ from .views import order
 from .views import user
 
 from .views import admin
+from .views import gover
 
 
 
@@ -18,6 +19,9 @@ urlpatterns = [
     # test
     path('hello/', test.hello),
     path('db/', test.db),
+
+    #governance
+    path('governance/trx', gover.trxList) ,
 
     # admin
     path('vue-element-admin/user/login', admin.login),

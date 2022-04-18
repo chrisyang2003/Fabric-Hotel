@@ -1,174 +1,159 @@
 <template>
   <div class="app-container">
-    <el-table v-loading="listLoading" :data="list" border fit highlight-current-row style="width: 100%">
-      <el-table-column align="center" label="交易哈希Hash" width="80">
-        <template slot-scope="{row}">
-          <span>{{ row.id }}</span>
+    <el-table
+      v-loading="listLoading"
+      :data="list"
+      border
+      fit
+      highlight-current-row
+      style="width: 100%"
+    >
+      <el-table-column align="center" label="订单编号" min-width="20">
+        <template slot-scope="{ row }">
+          <span>{{ row.orderno }}</span>
         </template>
       </el-table-column>
 
-      <el-table-column width="180px" label="交易时间" align="center" >
-        <template slot-scope="{row}">
-          <span>{{ row.timestamp | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
+      <el-table-column min-width="10" align="center" label="房间ID">
+        <template slot-scope="{ row }">
+          <span>{{ row.houseid }}</span>
         </template>
       </el-table-column>
 
-      <el-table-column width="120px" align="center" label="Author">
-        <template slot-scope="{row}">
-          <span>{{ row.author }}</span>
+      <el-table-column align="center" label="交易哈希" min-width="40">
+        <template slot-scope="{ row }">
+          <span>{{ row.trx.slice(0, 30) + "..." }}</span>
         </template>
       </el-table-column>
 
-      <el-table-column width="100px" label="Importance">
-        <template slot-scope="{row}">
-          <svg-icon v-for="n in + row.importance" :key="n" icon-class="star" class="meta-item__icon" />
+      <el-table-column width="180px" label="交易时间" align="center">
+        <template slot-scope="{ row }">
+          <span>{{ row.timestamp }}</span>
         </template>
       </el-table-column>
 
-      <el-table-column class-name="status-col" label="Status" width="110">
-        <template slot-scope="{row}">
+      <el-table-column width="120px" align="center" label="住户信息">
+        <template slot-scope="{ row }">
+          <span>{{ row.liver }}</span>
+        </template>
+      </el-table-column>
+
+      <el-table-column class-name="status-col" label="状态" width="110">
+        <template slot-scope="{ row }">
           <el-tag :type="row.status | statusFilter">
             {{ row.status }}
           </el-tag>
         </template>
       </el-table-column>
 
-      <el-table-column min-width="300px" label="Title">
-        <template slot-scope="{row}">
-          <template v-if="row.edit">
-            <el-input v-model="row.title" class="edit-input" size="small" />
-            <el-button
-              class="cancel-btn"
-              size="small"
-              icon="el-icon-refresh"
-              type="warning"
-              @click="cancelEdit(row)"
-            >
-              cancel
-            </el-button>
-          </template>
-          <span v-else>{{ row.title }}</span>
-        </template>
-      </el-table-column>
-
-      <el-table-column align="center" label="Actions" width="120">
-        <template slot-scope="{row}">
-          <el-button
-            v-if="row.edit"
-            type="success"
-            size="small"
-            icon="el-icon-circle-check-outline"
-            @click="confirmEdit(row)"
+      <el-table-column class-name="status-col" label="操作" min-width="20">
+        <template slot-scope="{ row }">
+          <el-button type="primary" @click="showDetails(row.trx)"
+            >详细信息</el-button
           >
-            Ok
-          </el-button>
-          <el-button
-            v-else
-            type="primary"
-            size="small"
-            icon="el-icon-edit"
-            @click="row.edit=!row.edit"
-          >
-            Edit
-          </el-button>
         </template>
       </el-table-column>
     </el-table>
+
+    <el-dialog
+      title="提示"
+      :visible.sync="dialogVisible"
+      :before-close="cancel"
+    >
+      <el-descriptions class="margin-top" title="带边框列表" :column="3" border>
+    <template slot="extra">
+      <el-button type="primary" size="small">操作</el-button>
+    </template>
+    <el-descriptions-item>
+      <template slot="label">
+        <i class="el-icon-user"></i>
+        用户名
+      </template>
+      kooriookami
+    </el-descriptions-item>
+    <el-descriptions-item>
+      <template slot="label">
+        <i class="el-icon-mobile-phone"></i>
+        手机号
+      </template>
+      18100000000
+    </el-descriptions-item>
+    <el-descriptions-item>
+      <template slot="label">
+        <i class="el-icon-location-outline"></i>
+        居住地
+      </template>
+      苏州市
+    </el-descriptions-item>
+    <el-descriptions-item>
+      <template slot="label">
+        <i class="el-icon-tickets"></i>
+        备注
+      </template>
+      <el-tag size="small">学校</el-tag>
+    </el-descriptions-item>
+    <el-descriptions-item>
+      <template slot="label">
+        <i class="el-icon-office-building"></i>
+        联系地址
+      </template>
+      江苏省苏州市吴中区吴中大道 1188 号
+    </el-descriptions-item>
+  </el-descriptions>
+
+      <span slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="cancel">关闭</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { fetchList } from '@/api/article'
-import { transactionList } from '@/api/remote-search'
-
-// export default {
-//   filters: {
-//     statusFilter(status) {
-//       const statusMap = {
-//         success: 'success',
-//         pending: 'danger'
-//       }
-//       return statusMap[status]
-//     },
-//     orderNoFilter(str) {
-//       return str.substring(0, 30)
-//     }
-//   },
-//   data() {
-//     return {
-//       list: null
-//     }
-//   },
-//   created() {
-//     this.fetchData()
-//   },
-//   methods: {
-//     fetchData() {
-//       transactionList().then(response => {
-//         this.list = response.data.items.slice(0, 6)
-//       })
-//     }
-//   }
-// }
+import { getTrxList, getTrxById } from "@/api/trx";
 
 export default {
-  name: 'InlineEditTable',
+  name: "InlineEditTable",
   filters: {
     statusFilter(status) {
       const statusMap = {
-        published: 'success',
-        draft: 'info',
-        deleted: 'danger'
-      }
-      return statusMap[status]
-    }
+        待付款: "primary",
+        已支付: "success",
+        失败: "danger",
+      };
+      return statusMap[status];
+    },
   },
   data() {
     return {
       list: null,
+      detail: null,
       listLoading: true,
       listQuery: {
         page: 1,
-        limit: 10
-      }
-    }
+        limit: 10,
+      },
+      dialogVisible: false,
+    };
   },
   created() {
-    this.getList()
+    this.getList();
   },
   methods: {
+    cancel() {
+      this.dialogVisible = false;
+    },
     async getList() {
-      this.listLoading = true
-      const { data } = await fetchList(this.listQuery)
-      const items = data.items
-
-      this.list = items.map(v => {
-        this.$set(v, 'edit', false) // https://vuejs.org/v2/guide/reactivity.html
-        v.originalTitle = v.title //  will be used when user click the cancel botton
-
-        v = [{id:1,},{},3]
-        return v
-      })
-      this.listLoading = false
+      this.listLoading = true;
+      this.list = await getTrxList(this.listQuery);
+      this.listLoading = false;
     },
-    cancelEdit(row) {
-      row.title = row.originalTitle
-      row.edit = false
-      this.$message({
-        message: 'The title has been restored to the original value',
-        type: 'warning'
-      })
+    async showDetails(id) {
+      this.dialogVisible = true;
+      this.detail = await getTrxById(id);
+      console.log(this.detail);
     },
-    confirmEdit(row) {
-      row.edit = false
-      row.originalTitle = row.title
-      this.$message({
-        message: 'The title has been edited',
-        type: 'success'
-      })
-    }
-  }
-}
+  },
+};
 </script>
 
 <style scoped>

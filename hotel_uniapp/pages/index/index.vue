@@ -42,12 +42,12 @@
 						{{ vuex_store.address ? vuex_store.address : '' }}
 					</view>
 				</view>
-				<view class="u-m-l-15" v-if="vuex_store.is_more == true" @click="goPage('/pages/store/cutlist')">
+				<!-- <view class="u-m-l-15" v-if="vuex_store.is_more == true" @click="goPage('/pages/store/cutlist')">
 					<u-icon color="#838383" name="qiehuan" size="60" custom-prefix="custom-icon"></u-icon>
-				</view>
+				</view> -->
 			</view>
 			<view class="u-m-t-30 grid">
-				<u-button @click="goPage('/pages/hotel/hotel')">立即预定</u-button>
+				<u-button type="primary" @click="goPage('/pages/hotel/hotel')">立即预定</u-button>
 				<!-- <u-grid :col="3">
 					<u-grid-item v-for="(item, index) in vuex_config.navigate" :key="index" @click="grids(item)">
 						<u-icon :name="item.image" :size="item.size"></u-icon>

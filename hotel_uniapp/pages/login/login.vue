@@ -11,6 +11,12 @@
 					<u-form-item :label-position="labelPosition" label="密码:" prop="password" left-icon="lock" label-width="120" v-if="!border">
 						<u-input :password-icon="true" :border="border" type="password" v-model="form.password" placeholder="请输入密码"></u-input>
 					</u-form-item>
+
+					<u-switch v-model="proofLogin" style="margin-top: 10px"></u-switch>
+					<u-form-item v-if="proofLogin" :label-position="labelPosition" label="Proof 登陆" prop="password" left-icon="lock" label-width="120">
+						<u-input  placeholder="请输入待认证proof"></u-input>
+					</u-form-item>
+					
 				</u-form>
 			</view>
 			<view class="u-m-t-80">
@@ -21,14 +27,14 @@
 				<!-- <view class="" @click="goPage('/pages/login/forgetpwd')">忘记密码</view> -->
 				<!-- <view class="" @click="goPage('/pages/login/register')">注册账号</view> -->
 			</view>
-			<view class="u-text-center other" v-if="isThreeLogin">
+			<!-- <view class="u-text-center other" v-if="isThreeLogin">
 				<u-grid :col="1" :border="false">
 					<u-grid-item @click="goThreeLogin">
 						<u-icon name="weixin-fill" color="#53c240" :size="50"></u-icon>
 						<view class="grid-text">微信</view>
 					</u-grid-item>
 				</u-grid>
-			</view>
+			</view> -->
 		</view>
 	</view>
 </template>
@@ -54,6 +60,7 @@ export default {
 	},
 	data() {
 		return {
+			proofLogin: true,
 			labelPosition: 'top',
 			border: false,
 			errorType: ['message'],

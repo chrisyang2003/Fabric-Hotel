@@ -1,13 +1,13 @@
 <template>
   <el-table :data="list" style="width: 100%;padding-top: 15px;">
-    <el-table-column label="最近交易哈希" min-width="200">
-      <template slot-scope="scope">
-        {{ scope.row.order_no | orderNoFilter }}
+    <el-table-column label="最近交易订单" min-width="60">
+      <template slot-scope="{row}">
+        {{ row.orderno }}
       </template>
     </el-table-column>
-    <el-table-column label="金额" width="195" align="center">
-      <template slot-scope="scope">
-        ¥{{ scope.row.price | toThousandFilter }}
+    <el-table-column label="房间ID" width="80" align="center">
+      <template slot-scope="{row}">
+        {{ row.houseid }}
       </template>
     </el-table-column>
     <el-table-column label="状态" width="100" align="center">
@@ -21,16 +21,17 @@
 </template>
 
 <script>
-import { transactionList } from '@/api/remote-search'
+import { getTrxList } from '@/api/trx'
 
 export default {
   filters: {
     statusFilter(status) {
       const statusMap = {
-        success: 'success',
-        pending: 'danger'
-      }
-      return statusMap[status]
+        待付款: "primary",
+        已支付: "success",
+        失败: "danger",
+      };
+      return statusMap[status];
     },
     orderNoFilter(str) {
       return str.substring(0, 30)
@@ -42,14 +43,11 @@ export default {
     }
   },
   created() {
-    this.fetchData()
+    getTrxList().then(res => {
+      this.list = res.slice(0,6)
+      console.log(res);
+      
+    })
   },
-  methods: {
-    fetchData() {
-      transactionList().then(response => {
-        this.list = response.data.items.slice(0, 6)
-      })
-    }
-  }
 }
 </script>

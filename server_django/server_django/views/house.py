@@ -1,7 +1,5 @@
-from urllib import response
 from django.http import HttpResponse, JsonResponse
 from model.house import house
-from django.forms import model_to_dict
 
 latitude = 30.783238
 longitude = 103.960651
@@ -109,6 +107,7 @@ def booking(_):
             "day_time_text":  time.strftime('%Y-%m-%d', time.localtime(time.time() + 3600 * 24 * i))
         })
 
+    
     data = {"code": 1, "msg": "获取成功！", "time": "1649006332", "data": {"detail": {
         "id": id,
         "market_price": resp.market_price,
@@ -118,7 +117,8 @@ def booking(_):
         "intro": resp.desc,
         "area": resp.area,
         "livenums": resp.livenums,
-
-            "calendar": calendar,
-            "store": {"id": 1, "name": "创想第一门店", "latitude": "22.547", "longitude": "114.085947", "address": "1"}, "type": {"id": 23, "name": "新房特惠", "type_text": ""}, "status_text": "上架"}, "lodger": []}}
+        "calendar": calendar,
+        "store": {"id": 1, "name": "测试", "latitude": "22.547", "longitude": "114.085947", "address": "1"}, "type": {"id": 23, "name": "新房特惠", "type_text": ""}, "status_text": "上架"}, 
+        "lodger":[{"id":1,"user_id":112,"name":"杨佳立","type":0,"idnumber":"50023320000103031X", "age":22},
+        {"id":2,"user_id":14,"name":"吴亦凡","type":0,"idnumber":"50023320000103031X", "age":17}]}}
     return JsonResponse(data)

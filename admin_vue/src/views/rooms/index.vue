@@ -20,42 +20,42 @@
       highlight-current-row
       style="width: 100%"
     >
-      <el-table-column align="center" label="房间ID" width="80">
+      <el-table-column align="center" label="房间ID" min-width="10">
         <template slot-scope="{ row }">
           <span>{{ row.id }}</span>
         </template>
       </el-table-column>
 
-      <el-table-column width="180px" align="center" label="房间类型">
+      <el-table-column width="180px" align="center" label="房间类型" min-width="10">
         <template slot-scope="{ row }">
           <span>{{ row.name }}</span>
         </template>
       </el-table-column>
 
-      <el-table-column width="120px" align="center" label="房间图片">
+      <el-table-column width="120px" align="center" label="房间图片" min-width="10">
         <template slot-scope="{ row }">
           <el-image
             style="width: 100px; height: 100px"
-            :src="myurl"
+            :src="row.image"
             :preview-src-list="[row.image]"
           >
           </el-image>
         </template>
       </el-table-column>
 
-      <el-table-column width="120px" align="center" label="标价/原价格">
+      <el-table-column width="120px" align="center" label="标价/原价格" min-width="10">
         <template slot-scope="{ row }">
-          <span>{{ row.house_price + "/" + row.market_price }}</span>
+          <span>{{ row.market_price + "/" + row.house_price }}</span>
         </template>
       </el-table-column>
 
-      <el-table-column width="120px" align="center" label="房间大小">
+      <el-table-column width="120px" align="center" label="房间大小" min-width="10">
         <template slot-scope="{ row }">
           <span>{{ row.area + 'm^2'}}</span>
         </template>
       </el-table-column>
 
-      <el-table-column width="120px" align="center" label="宜住人数">
+      <el-table-column width="120px" align="center" label="宜住人数" min-width="5">
         <template slot-scope="{ row }">
           <span>{{ row.livenums }}</span>
         </template>
@@ -63,7 +63,7 @@
 
       
 
-      <el-table-column width="120px" align="center" label="房间标签">
+      <el-table-column width="120px" align="center" label="房间标签" min-width="10">
         <template slot-scope="{ row }">
           <span>{{ row.tag.join(',') }}</span>
         </template>
@@ -82,11 +82,11 @@
       <el-table-column
         label="操作"
         align="center"
-        width="230"
+        min-width="20"
         class-name="small-padding fixed-width"
       >
         <template slot-scope="{ row, $index }">
-          <el-button type="primary" size="mini" @click="handleUpdate(row, $index)">
+          <el-button type="primary" @click="handleUpdate(row, $index)">
             Edit
           </el-button>
           <el-button
@@ -201,11 +201,7 @@ export default {
   },
   data() {
     return {
-      t:true,
       isedit: false,
-
-
-      myurl:"https://booking.demo.fastadmin.net/uploads/20210301/264852e5df946e3347bf1ad8502b4dd5.jpg",
       dialogVisible: false,
 
       list: null,

@@ -7,8 +7,7 @@ def commonInit(request):
 
 def lodgerList(_):
     data = {"code":1,"msg":"","time":"1649613655","data":{"data":[
-        {"id":1,"user_id":14,"name":"吴亦凡","type":0,"idnumber":"50023320000103031X", "age":22},
-        {"id":2,"user_id":112,"name":"杨佳立","type":0,"idnumber":"50023320000103031X", "age":17},
-
+        {"id":1,"user_id":112,"name":"杨佳立","type":0,"idnumber":"50023320000103031X", "age":22},
+        {"id":2,"user_id":14,"name":"吴亦凡","type":0,"idnumber":"50023320000103031X", "age":17},
     ]}}
     return JsonResponse(data)

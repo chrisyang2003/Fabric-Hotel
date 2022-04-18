@@ -1,15 +1,35 @@
+import json
 from django.http import JsonResponse
 
+
+def add(_):
+    # lodger_id = json.loads(_.body.decode())['lodger_ids']
+    # print(lodger_id)
+    data = {"code":1,"msg":"下单成功！","time":"1649696300","data":{"id":"3","amount":"120.00","status":"created"}}
+    return JsonResponse(data)
 
 def detail(request):
     data = {"code":1,"msg":"获取成功！","time":"1649006332","data":{}}
     return JsonResponse(data)
 
-
-def add(request):
-    data = {"code":1,"msg":"获取成功！","time":"1649006332","data":{"detail":{"id":8,"store_id":1,"type_config_id":23,"floor_config_id":3,"tag_config_ids":"40,22,39,38","facility_config_ids":"34,5,26,25","market_price":"80.00","price":"60.00","to_shop_pay":0,"name":"暑假特价房","checkin_time":"15:00:00","checkout_time":"12:00:00","notes_in":[],"views":4170,"images":["https://booking.demo.fastadmin.net/uploads/20210301/264852e5df946e3347bf1ad8502b4dd5.jpg"],"intro":"简介简介","area":"10.00","livenums":1,"createtime":1629276761,"status":"up","group_names":{"facility":[" 火灾报警器","吹风机","有电梯","榻榻米"],"tag":["推广优惠","月租惠选","满减优惠","节假日优惠"]},"coupon":[],"calendar":[{"id":198,"house_id":8,"day_time":1649088000,"price":"60.00","day_time_text":"2022-04-05"},{"id":201,"house_id":8,"day_time":1649433600,"price":"120.00","day_time_text":"2022-04-09"},{"id":206,"house_id":8,"day_time":1649692800,"price":"360.00","day_time_text":"2022-04-12"},{"id":205,"house_id":8,"day_time":1649779200,"price":"4999996.00","day_time_text":"2022-04-13"},{"id":214,"house_id":8,"day_time":1650297600,"price":"63.00","day_time_text":"2022-04-19"},{"id":202,"house_id":8,"day_time":1651852800,"price":"1000.00","day_time_text":"2022-05-07"},{"id":212,"house_id":8,"day_time":1652198400,"price":"58.00","day_time_text":"2022-05-11"},{"id":213,"house_id":8,"day_time":1653408000,"price":"58.00","day_time_text":"2022-05-25"},{"id":185,"house_id":8,"day_time":1654185600,"price":"66.00","day_time_text":"2022-06-03"},{"id":193,"house_id":8,"day_time":1655740800,"price":"61.00","day_time_text":"2022-06-21"},{"id":169,"house_id":8,"day_time":1656259200,"price":"61.00","day_time_text":"2022-06-27"},{"id":210,"house_id":8,"day_time":1656691200,"price":"70.00","day_time_text":"2022-07-02"},{"id":203,"house_id":8,"day_time":1656950400,"price":"64.00","day_time_text":"2022-07-05"},{"id":204,"house_id":8,"day_time":1657036800,"price":"64.00","day_time_text":"2022-07-06"},{"id":209,"house_id":8,"day_time":1657814400,"price":"55.00","day_time_text":"2022-07-15"},{"id":178,"house_id":8,"day_time":1658246400,"price":"5820.00","day_time_text":"2022-07-20"},{"id":181,"house_id":8,"day_time":1660233600,"price":"60.00","day_time_text":"2022-08-12"},{"id":182,"house_id":8,"day_time":1664553600,"price":"160.00","day_time_text":"2022-10-01"}],"order_calendar":[{"id":288,"house_id":8,"reserve_time":1657123200,"reserve_time_text":"2022-07-07"},{"id":287,"house_id":8,"reserve_time":1657036800,"reserve_time_text":"2022-07-06"},{"id":280,"house_id":8,"reserve_time":1656604800,"reserve_time_text":"2022-07-01"},{"id":292,"house_id":8,"reserve_time":1655481600,"reserve_time_text":"2022-06-18"},{"id":291,"house_id":8,"reserve_time":1655395200,"reserve_time_text":"2022-06-17"},{"id":282,"house_id":8,"reserve_time":1651420800,"reserve_time_text":"2022-05-02"},{"id":281,"house_id":8,"reserve_time":1651334400,"reserve_time_text":"2022-05-01"},{"id":260,"house_id":8,"reserve_time":1649520000,"reserve_time_text":"2022-04-10"},{"id":256,"house_id":8,"reserve_time":1649433600,"reserve_time_text":"2022-04-09"},{"id":255,"house_id":8,"reserve_time":1649347200,"reserve_time_text":"2022-04-08"},{"id":248,"house_id":8,"reserve_time":1649260800,"reserve_time_text":"2022-04-07"},{"id":247,"house_id":8,"reserve_time":1649174400,"reserve_time_text":"2022-04-06"},{"id":246,"house_id":8,"reserve_time":1649088000,"reserve_time_text":"2022-04-05"},{"id":245,"house_id":8,"reserve_time":1649001600,"reserve_time_text":"2022-04-04"}],"store":{"id":1,"name":"创想第一门店","latitude":"22.547","longitude":"114.085947","address":"广东省深圳市福田区华强北街道振兴路341号上步工业区"},"type":{"id":23,"name":"新房特惠","type_text":""},"status_text":"上架"},"lodger":[]}}
-    return JsonResponse(data)
-
 def pay(request):
     data = {"code":1,"msg":"获取成功！","time":"1649006332","data":{}}
+    return JsonResponse(data)
+
+def orderList(_):
+    data = {"code":1,"msg":"","time":"1649696378","data":{"total":1,"per_page":15,"current_page":1,"last_page":1,"data":[{"id":3,"type":0,"orderid":"20220412125820000000016469","source_id":1,"user_id":1,"user_coupon_id":0,"amount":"120.00","coupon_amount":null,"status":"created","checkin_time":1649692800,"leave_time":1649779200,"house":{"id":1,"name":"房间二号","images":["http:\/\/chrisyy.top:5000\/assets\/addons\/booking\/img\/swiper1.jpg","http:\/\/chrisyy.top:5000\/assets\/addons\/booking\/img\/swiper2.jpg"],"checkin_time":"15:00:00","checkout_time":"12:00:00","status_text":""},"subscribe":null,"type_text":"民宿","paytime_text":"","checkin_time_text":"2022-04-12 00:00:00","leave_time_text":"2022-04-13 00:00:00","status_text":"未支付"}]}}
+    return JsonResponse(data)
+
+def detail(_):
+    data = {"code":1,"msg":"","time":"1649694799","data":{
+        "id":2,
+        "orderid":"20220412123300000000017617",
+        "type":0,
+        "source_id":6,
+        "user_id":1,
+        "user_coupon_id":0,
+        "amount":"0.00",
+        "checkin_time":1649692800,"leave_time":1649779200,
+        "actual_checkin_time":null,"actual_checkout_time":null,"lodgers_ids":"1","memo":null,"status":"created","createtime":1649694780,"updatetime":1649694780,"lodgers":[{"id":1,"name":"杨佳立","mobile":"199****8875","type_text":""}],"source_data":null,"type_text":"民宿","paytime_text":"","checkin_time_text":"2022-04-12 00:00:00","leave_time_text":"2022-04-13 00:00:00","status_text":"未支付"}}
+
     return JsonResponse(data)

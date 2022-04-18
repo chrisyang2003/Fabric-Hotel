@@ -25,6 +25,7 @@
 								{{ item.name }}
 							</u-checkbox>
 						</u-checkbox-group>
+
 						<u-button
 							slot="right"
 							type="success"
@@ -168,6 +169,7 @@ export default {
 					if (res.code == 1) {						
 						this.info = res.data.detail;
 						this.$u.vuex('vuex_livenums', this.info.livenums);
+						console.log(res.data)
 						res.data.lodger.map(item => {
 							if (this.vuex_lodgerids.indexOf(item.id) != -1) {
 								item.checked = true;
@@ -176,6 +178,7 @@ export default {
 							}
 						});
 						this.lodgerList = res.data.lodger;
+						console.log('@@@',this.lodgerList)
 						this.loading = false;
 						this.lodger_ids = this.vuex_lodgerids;
 					} else {
@@ -239,21 +242,21 @@ export default {
 					// #endif
 				})
 				.then(res => {
-					if (res.code == 1) {
+					if (res.code) {
 						this.$u.toast(res.msg);
-						setTimeout(() => {
-							if (res.data.status == 'toshopay') {
-								this.goPage('/pages/order/houseorder');
-							} else {
-								this.goPage('/pages/order/payment?id=' + res.data.id);
-							}
-						}, 1000);
+						if (res.data){
+							setTimeout(() => {
+								this.goPage('/pages/order/payment?id=5');
+							}, 1000);
+						}
+						
 					} else {
-						this.$refs.uTips.show({
-							title: res.msg,
-							type: 'error',
-							duration: '5000'
-						});
+						this.$u.toast(res.msg)
+						// this.$refs.uTips.show({
+						// 	title: res.msg,
+						// 	type: 'error',
+						// 	duration: '5000'
+						// });
 					}
 				});
 		}

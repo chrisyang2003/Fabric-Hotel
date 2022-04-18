@@ -60,16 +60,13 @@
       :visible.sync="dialogVisible"
       :before-close="cancel"
     >
-      <el-descriptions class="margin-top" title="带边框列表" :column="3" border>
-    <template slot="extra">
-      <el-button type="primary" size="small">操作</el-button>
-    </template>
+    <el-descriptions class="margin-top" title="详细信息" :column="3" border>
     <el-descriptions-item>
       <template slot="label">
         <i class="el-icon-user"></i>
-        用户名
+        订单编号
       </template>
-      kooriookami
+      {{detail.orderno}}
     </el-descriptions-item>
     <el-descriptions-item>
       <template slot="label">
@@ -126,7 +123,10 @@ export default {
   data() {
     return {
       list: null,
-      detail: null,
+      detail: {
+        data: null,
+        info: null
+      },
       listLoading: true,
       listQuery: {
         page: 1,

@@ -3,8 +3,14 @@ module server_gin
 go 1.18
 
 require (
+	github.com/consensys/gnark v0.5.2
+	github.com/consensys/gnark-crypto v0.5.3
+	github.com/gin-gonic/gin v1.7.7
+)
+
+require (
+	github.com/fxamacker/cbor/v2 v2.2.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
-	github.com/gin-gonic/gin v1.7.7 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/go-playground/validator/v10 v10.10.1 // indirect
@@ -15,12 +21,10 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/ugorji/go/codec v1.2.7 // indirect
+	github.com/x448/float16 v0.8.4 // indirect
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
 	golang.org/x/sys v0.0.0-20220412015802-83041a38b14a // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-
-	github.com/consensys/gnark v0.5.2
-    github.com/consensys/gnark-crypto v0.5.3
 )

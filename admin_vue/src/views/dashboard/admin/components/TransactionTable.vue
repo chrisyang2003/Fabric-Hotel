@@ -21,7 +21,7 @@
 </template>
 
 <script>
-import { getTrxList } from '@/api/trx'
+import { getAllorder } from '@/api/order'
 
 export default {
   filters: {
@@ -43,7 +43,7 @@ export default {
     }
   },
   created() {
-    getTrxList().then(res => {
+    getAllorder().then(res => {
       this.list = res.slice(0,6)
       console.log(res);
       

@@ -1,5 +1,5 @@
 from django.http import JsonResponse
-
+import requests 
 from model.house import house
 
 
@@ -16,14 +16,13 @@ def info(_):
     return JsonResponse(data)
 
 def init(_):
-
-
     data = {"code":20000, "data":{
-        "newVisitis": 1,
+        "ordercount": len(requests.get('http://127.0.0.1:3000/order/getall').json()),
         "message": 0,
         "purchases": 100,
         "hotels": len(house.objects.all()),
     }}
+
     return JsonResponse(data)
 
 def List(_):

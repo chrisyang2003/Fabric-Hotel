@@ -48,7 +48,7 @@
 
       <el-table-column class-name="status-col" label="操作" min-width="20">
         <template slot-scope="{ row }">
-          <el-button type="primary" @click="showDetails(row.trx)"
+          <el-button type="primary" @click="showDetails(row.orderno)"
             >详细信息</el-button
           >
         </template>
@@ -66,35 +66,51 @@
         <i class="el-icon-user"></i>
         订单编号
       </template>
-      {{detail.orderno}}
+      {{detail.writekey}}
     </el-descriptions-item>
     <el-descriptions-item>
       <template slot="label">
         <i class="el-icon-mobile-phone"></i>
-        手机号
+        时间
       </template>
-      18100000000
+      {{detail.timestamp}}
     </el-descriptions-item>
     <el-descriptions-item>
       <template slot="label">
         <i class="el-icon-location-outline"></i>
-        居住地
+        MSP组织ID
       </template>
-      苏州市
+      {{detail.mspid}}
     </el-descriptions-item>
     <el-descriptions-item>
       <template slot="label">
         <i class="el-icon-tickets"></i>
-        备注
+        合约名
       </template>
-      <el-tag size="small">学校</el-tag>
+      {{detail.ccname}}
     </el-descriptions-item>
     <el-descriptions-item>
       <template slot="label">
         <i class="el-icon-office-building"></i>
-        联系地址
+        通道名
       </template>
-      江苏省苏州市吴中区吴中大道 1188 号
+      {{detail.channel_id}}
+    </el-descriptions-item>
+
+     <el-descriptions-item>
+      <template slot="label">
+        <i class="el-icon-office-building"></i>
+        交易哈希
+      </template>
+      {{detail.trx}}
+    </el-descriptions-item>
+
+     <el-descriptions-item>
+      <template slot="label">
+        <i class="el-icon-office-building"></i>
+        交易载荷
+      </template>
+      {{detail.data}}
     </el-descriptions-item>
   </el-descriptions>
 
@@ -106,7 +122,7 @@
 </template>
 
 <script>
-import { getTrxList, getTrxById } from "@/api/trx";
+import { getAllorder, getOrderDetailById} from "@/api/order";
 
 export default {
   name: "InlineEditTable",
@@ -119,6 +135,7 @@ export default {
       };
       return statusMap[status];
     },
+
   },
   data() {
     return {
@@ -144,13 +161,15 @@ export default {
     },
     async getList() {
       this.listLoading = true;
-      this.list = await getTrxList(this.listQuery);
+      this.list = await getAllorder();
       this.listLoading = false;
     },
     async showDetails(id) {
       this.dialogVisible = true;
-      this.detail = await getTrxById(id);
-      console.log(this.detail);
+      console.log(id)
+      this.detail = await getOrderDetailById(id)
+      console.log(this.detail)
+
     },
   },
 };

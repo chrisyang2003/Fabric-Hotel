@@ -50,8 +50,8 @@ def houseList(requset):
 
         housestatus = '空房'
         for i in r:
-            if item.id == i['houseid']:
-                housestatus = i['待付款']
+            if item.id == int(i['houseid']):
+                housestatus = i['status']
 
         data.append({
             "id": item.id,
@@ -64,8 +64,8 @@ def houseList(requset):
             "livenums": item.livenums,
             "image": item.image,
             "tag": item.tag,
-            "desc": housestatus,
-            "status": item.status
+            "desc": item.desc,
+            "status": housestatus
         })
 
     _json = {"code": 1, "msg": "", "time": "1648983355", "data": {

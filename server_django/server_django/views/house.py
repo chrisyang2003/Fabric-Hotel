@@ -1,5 +1,6 @@
 from django.http import HttpResponse, JsonResponse
 from model.house import house
+import requests
 
 latitude = 30.783238
 longitude = 103.960651
@@ -39,8 +40,19 @@ def addHouse(_):
 
 def houseList(requset):
 
+    # get fabric order
+    r = requests.get('http://chrisyy.top:3000/order/getall').json()
+    noempty = [int(i['houseid']) for i in r]
+
+
     data = []
     for item in house.objects.all():
+
+        housestatus = '空房'
+        for i in r:
+            if item.id == i['houseid']:
+                housestatus = i['待付款']
+
         data.append({
             "id": item.id,
             "name": item.name,
@@ -52,7 +64,7 @@ def houseList(requset):
             "livenums": item.livenums,
             "image": item.image,
             "tag": item.tag,
-            "desc": item.desc,
+            "desc": housestatus,
             "status": item.status
         })
 

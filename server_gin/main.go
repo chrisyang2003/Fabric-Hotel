@@ -3,12 +3,12 @@ package main
 import (
 	"bytes"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/accumulator/merkle"
 	"github.com/gin-gonic/gin"
 	"math/big"
 	"net/http"
@@ -49,6 +49,20 @@ func (circuit *ExpCircuit) Define(curveID ecc.ID, api frontend.API) error {
 	return nil
 }
 
+type merkleCircuit struct {
+	RootHash     frontend.Variable `gnark:",public"`
+	Path, Helper []frontend.Variable
+}
+
+func (circuit *merkleCircuit) Define(curveID ecc.ID, api frontend.API) error {
+	hFunc, err := mimc.NewMiMC("seed", curveID, api)
+	if err != nil {
+		return err
+	}
+	merkle.VerifyProof(api, hFunc, circuit.RootHash, circuit.Path, circuit.Helper)
+	return nil
+}
+
 func main() {
 	var expCircuit ExpCircuit
 	r1cs, err := frontend.Compile(ecc.BN254, backend.GROTH16, &expCircuit)
@@ -64,20 +78,19 @@ func main() {
 
 	var buf bytes.Buffer
 	pk.WriteTo(&buf)
-	b64pk, _ := json.Marshal(base64.StdEncoding.EncodeToString(buf.Bytes()))
+	b64pk := base64.StdEncoding.EncodeToString(buf.Bytes())
+	buf.Reset()
 	vk.WriteTo(&buf)
-	b64vk, _ := json.Marshal(base64.StdEncoding.EncodeToString(buf.Bytes()))
+	b64vk := base64.StdEncoding.EncodeToString(buf.Bytes())
 
 	r := gin.Default()
 
 	r.Use(setHearder())
 
 	r.GET("/getParams", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"data": gin.H{
-				"vk": b64vk,
-				"pk": b64pk,
-			},
+		c.JSON(http.StatusOK, gin.H{
+			"vk": b64vk,
+			"pk": b64pk,
 		})
 	})
 

@@ -42,7 +42,7 @@ func randomStr(length int) string {
 
 func main() {
 	var buf bytes.Buffer
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 1048576; i++ {
 		buf.Write([]byte(randomStr(10)))
 	}
 	fmt.Println(buf)
@@ -58,7 +58,7 @@ func main() {
 
 	proofHelper := merkle.GenerateProofHelper(merkleProof, proofIndex, numLeaves)
 
-	fmt.Printf("proofHelper: %v\n", proofHelper)
+	//fmt.Printf("proofHelper: %v\n", proofHelper)
 
 	verified := merkletree.VerifyProof(bn254.NewMiMC("seed"), merkleRoot, merkleProof, proofIndex, numLeaves)
 	if !verified {

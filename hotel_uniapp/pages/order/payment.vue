@@ -23,25 +23,25 @@
 			
 						<!-- #ifndef MP-WEIXIN -->
 						<u-cell-item
-							:icon-style="{ color: 'DDBB74' }"
-							@click="paytype = 'alipay'"
+							:icon-style="{ color: '#7B68EE' }"
+							@click="paytype = 'erc20'"
 							:arrow="false"
 							hover-class="cell-hover-class"
-							icon="rmb-circle-fill"
-							title="代币支付"
+							icon="lock-opened-fill"
+							title="ERC20代币支付"
 							:label="'我的余额: ' + balance + ' HotelToken (HTN)'"
 						>
-						
 							<u-radio slot="right-icon" name="alipay" :active-color="theme.bgColor"></u-radio>
 						</u-cell-item>
 
 						<u-cell-item
 							:icon-style="{ color: '#20D029' }"
-							@click="paytype = 'wechat'"
+							@click="paytype = 'privacy'"
 							:arrow="false"
-							icon="rmb"
-							title="法币支付"
+							icon="lock-fill"
+							title="隐私代币支付"
 							hover-class="cell-hover-class"
+							:label="'我的余额: ' + balance + ' PrivacyToken (PRN)'"
 						>
 							<u-radio slot="right-icon" name="wechat" :active-color="theme.bgColor"></u-radio>
 						</u-cell-item>

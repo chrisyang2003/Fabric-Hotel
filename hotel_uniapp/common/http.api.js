@@ -104,8 +104,8 @@ const install = (Vue, vm) => {
 
 	
 	vm.$api.addOrder			= async (params = {}) => {
-		return await vm.$u.get('http://127.0.0.1:7000/addons/booking/order/add', params)
-		// return await vm.$u.get('http://127.0.0.1:8000/addons/booking/order/add', params);
+		// return await vm.$u.get('http://127.0.0.1:7000/addons/booking/order/add', params)
+		return await vm.$u.get('http://127.0.0.1:8000/addons/booking/order/add', params);
 	}
 	vm.$api.orderDetail			= async (params = {}) => await vm.$u.get('http://chrisyy.top:5000/addons/booking/order/detail', params);
 	vm.$api.orderList			= async (params = {}) => await vm.$u.get('http://chrisyy.top:5000/addons/booking/order/orderList', params);

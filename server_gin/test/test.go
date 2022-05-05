@@ -12,6 +12,7 @@ import (
 	"github.com/consensys/gnark/std/accumulator/merkle"
 	"github.com/consensys/gnark/std/hash/mimc"
 	"math/rand"
+	"strconv"
 	"time"
 )
 
@@ -40,6 +41,11 @@ func randomStr(length int) string {
 	return string(result)
 }
 
+func commitment(value int, r int) int {
+
+	return 1
+}
+
 func main() {
 	var buf bytes.Buffer
 	for i := 0; i < 1048576; i++ {
@@ -49,7 +55,6 @@ func main() {
 	// build & verify proof for an elmt in the file
 	proofIndex := uint64(5)
 	segmentSize := 10
-	merkleRoot, merkleProof, numLeaves, err := merkletree.BuildReaderProof(&buf, bn254.NewMiMC("seed"), segmentSize, proofIndex)
 	if err != nil {
 		return
 	}
@@ -81,7 +86,12 @@ func main() {
 		fmt.Printf("Setup failed\n")
 		return
 	}
-
+	var value, r ,spendvalue ,rr ,rs ,remindvalue int
+	toRcommit := commitment(spendvalue, rs)
+	toMecommit := commitment(remindvalue, rr)
+	enc()
+	buf.Write([]byte(strconv.Itoa(commit)))
+	merkleRoot, merkleProof, numLeaves, err := merkletree.BuildReaderProof(&buf, bn254.NewMiMC("seed"), segmentSize, proofIndex)
 	witness := &merkleCircuit{
 		Path:     make([]frontend.Variable, len(merkleProof)),
 		Helper:   make([]frontend.Variable, len(merkleProof)-1),
@@ -93,7 +103,6 @@ func main() {
 	for i := 0; i < len(merkleProof)-1; i++ {
 		witness.Helper[i].Assign(proofHelper[i])
 	}
-
 	proof, err := groth16.Prove(r1cs, pk, witness)
 	if err != nil {
 		fmt.Printf("Prove failed： %v\n", err)

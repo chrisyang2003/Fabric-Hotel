@@ -52,7 +52,7 @@ urlpatterns = [
     path('addons/booking/order/pay', order.pay),
     path('addons/booking/order/add', order.add),
     path('addons/booking/order/detail', order.detail),
-
+    path('addons/booking/order/orderList', order.orderList),
     # other
 
 ]

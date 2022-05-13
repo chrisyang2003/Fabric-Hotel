@@ -43,6 +43,10 @@ class mycontract extends Contract {
 		return await order.getAllorder(ctx);
 	}
 
+	async payOrder(ctx, orderno, type, user){
+		await order.payOrder(ctx, orderno, type, user);
+	}
+
 	// erc20 contract
 	async tokenName(ctx) {
 		return 'HotelToken';
@@ -52,6 +56,7 @@ class mycontract extends Contract {
 	}
 	async InitLedger(ctx) {
 		await erc20.updateBalance(ctx, 'totalSupply', 0);
+		await erc20.updateBalance(ctx, 'hotelaccount', 0);
 	}
 
 	async totalSupply(ctx) {

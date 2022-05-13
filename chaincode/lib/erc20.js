@@ -34,6 +34,9 @@ exports.mint = async function(ctx, user, amount){
 };
 
 exports.transfer = async function(ctx, from, to, amount){
+	if (amount < 0){
+		throw new Error('amount < 0');
+	}
 	await this.initUser(ctx, from);
 	await this.initUser(ctx, to);
 

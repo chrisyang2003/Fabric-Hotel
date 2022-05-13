@@ -1,5 +1,6 @@
 // eslint-disable-next-line strict
 const utils = require('./utils');
+const erc20 = require('./erc20');
 
 
 function orderkey(key){
@@ -46,7 +47,14 @@ exports.getAllorder = async function(ctx){
 	return await utils.getALlStatus(ctx, 'order');
 };
 
-// exports.payOrder = async function(ctx){
-//
-// };
+exports.payOrder = async function(ctx, orderno, type, user){
+	const orderinfo = JSON.parse((await this.getOrder(ctx, orderno)));
+	const price = orderinfo.price;
+
+	if (type === 'erc20'){
+		await erc20.transfer(ctx, user, 'hotelaccount', price);
+		orderinfo.status = '已支付';
+		await utils.putState(ctx, orderkey(orderno), orderinfo);
+	}
+};
 

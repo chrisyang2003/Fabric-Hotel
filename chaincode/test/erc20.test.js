@@ -149,7 +149,7 @@ describe('Asset Transfer Events Tests', () => {
 			expect(10).to.eql((await assetTransfer.totalSupply(transactionContext)));
 
 			try {
-				await assetTransfer.transfer(transactionContext, 'alice', 'bob', '11');
+				await assetTransfer.transfer(transactionContext, 'alice', 'bob', 11);
 				assert.fail('transfer should have failed');
 			} catch (err) {
 				expect(err.message).to.equal('User alice does not have enough token');
@@ -193,6 +193,7 @@ describe('Asset Transfer Events Tests', () => {
 
 			let exp = [
 				{'token:totalSupply': 10},
+				{'token:hotelaccount':0},
 				{'token:alice': 5},
 				{'token:bob': 5}
 			];
@@ -277,6 +278,25 @@ describe('Asset Transfer Events Tests', () => {
 			let exp = { id: 1, pk: '123', r: '456', ext: '{}', lastproof: '' };
 			expect(JSON.stringify(exp)).to.eq((await assetTransfer.getUser(transactionContext, '123')));
 
+		});
+	});
+
+	describe('Test payorder', () => {
+		it('should return success on payorder', async () => {
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+			await assetTransfer.Mint(transactionContext, 'alice', '200');
+			let orderno = await assetTransfer.addOrder(transactionContext, '1', 'alice', '100', '{}');
+
+
+			await assetTransfer.payOrder(transactionContext, orderno, 'erc20', 'alice');
+			expect(100).to.eql((await assetTransfer.balanceOf(transactionContext, 'alice')));
+
+			expect(100).to.eql((await assetTransfer.balanceOf(transactionContext, 'hotelaccount')));
+
+			let r = await assetTransfer.getOrder(transactionContext, orderno);
+			r = JSON.parse(r);
+			expect('已支付').to.eq(r.status);
 		});
 	});
 });

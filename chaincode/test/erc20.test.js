@@ -4,8 +4,8 @@ const chai = require('chai');
 const sinonChai = require('sinon-chai');
 const expect = chai.expect;
 
-const { Context } = require('fabric-contract-api');
-const { ChaincodeStub, ClientIdentity } = require('fabric-shim');
+const {Context} = require('fabric-contract-api');
+const {ChaincodeStub, ClientIdentity} = require('fabric-shim');
 
 const AssetTransfer = require('../lib/assetTransferEvents.js');
 
@@ -83,7 +83,7 @@ describe('Asset Transfer Events Tests', () => {
 					const copied = Object.assign({}, chaincodeStub.states);
 
 					for (let key in copied) {
-						yield { value: copied[key] };
+						yield {key: key, value: copied[key]};
 					}
 				}
 			}
@@ -111,11 +111,12 @@ describe('Asset Transfer Events Tests', () => {
 			let assetTransfer = new AssetTransfer();
 			await assetTransfer.InitLedger(transactionContext);
 
-			try{
+			try {
 				expect(0).to.eq((await assetTransfer.balanceOf(transactionContext, 'alice')));
 				assert.fail('should fail');
-			}catch (err){
-				expect(err.message).to.equal('The asset token:alice does not exist');			}
+			} catch (err) {
+				expect(err.message).to.equal('The asset token:alice does not exist');
+			}
 		});
 
 		it('should return success on InitLedger ', async () => {
@@ -191,12 +192,12 @@ describe('Asset Transfer Events Tests', () => {
 			expect(5).to.eql((await assetTransfer.balanceOf(transactionContext, 'bob')));
 
 			let exp = [
-				{ 'token:totalSupply': 10 },
-				{ 'token:alice': 5 },
-				{ 'token:bob': 5 }
+				{'token:totalSupply': 10},
+				{'token:alice': 5},
+				{'token:bob': 5}
 			];
 			let r = await assetTransfer.getTokenList(transactionContext);
-			expect(exp).to.eql(JSON.parse(r));
+			expect(JSON.stringify(exp)).to.eql(r);
 		});
 	});
 	describe('Test order', () => {
@@ -225,7 +226,7 @@ describe('Asset Transfer Events Tests', () => {
 			try {
 				await assetTransfer.getOrder(transactionContext, orderno);
 				assert.fail('fail');
-			}catch (err){
+			} catch (err) {
 				expect(err.message).to.equal(`The asset order:${orderno} does not exist`);
 			}
 
@@ -246,7 +247,7 @@ describe('Asset Transfer Events Tests', () => {
 			try {
 				await assetTransfer.getOrder(transactionContext, orderno);
 				assert.fail('fail');
-			}catch (err){
+			} catch (err) {
 				expect(err.message).to.equal(`The asset order:${orderno} does not exist`);
 			}
 			// expect(JSON.stringify(exp)).to.eq(());
@@ -256,13 +257,26 @@ describe('Asset Transfer Events Tests', () => {
 		it('should return success on getAllOrder', async () => {
 			let assetTransfer = new AssetTransfer();
 			await assetTransfer.addOrder(transactionContext, '1', 'alice', '100', '{}');
-			await sleep(1000);
-			await assetTransfer.addOrder(transactionContext, '1', 'alice', '100', '{}');
+			// await sleep(1000);
+			// await assetTransfer.addOrder(transactionContext, '1', 'alice', '100', '{}');
 			await assetTransfer.getAllorder(transactionContext);
 		});
 
+	});
 
+	describe('Test user', () => {
+		it('should return success on addUser', async () => {
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+			await assetTransfer.Mint(transactionContext, 'alice', '10');
+			await assetTransfer.addOrder(transactionContext, '1', 'alice', '100', '{}');
 
+			expect(0).to.eq((await assetTransfer.getUserCount(transactionContext)));
+			await assetTransfer.reigster(transactionContext, '123', '456', '{}');
+			expect(1).to.eq((await assetTransfer.getUserCount(transactionContext)));
+			let exp = { id: 1, pk: '123', r: '456', ext: '{}', lastproof: '' };
+			expect(JSON.stringify(exp)).to.eq((await assetTransfer.getUser(transactionContext, '123')));
 
+		});
 	});
 });

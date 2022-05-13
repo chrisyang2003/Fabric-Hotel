@@ -43,8 +43,7 @@ exports.deleteOrder = async function(ctx, id){
 	await utils.deleteAsset(ctx, orderkey(id));
 };
 exports.getAllorder = async function(ctx){
-	let r = await utils.getALlStatus(ctx);
-	return JSON.stringify(r);
+	return await utils.getALlStatus(ctx, 'order');
 };
 
 // exports.payOrder = async function(ctx){

@@ -3,11 +3,28 @@
 const { Contract } = require('fabric-contract-api');
 const erc20 = require('./erc20');
 const order = require('./order');
-
+const user = require('./user');
 
 class mycontract extends Contract {
 
 	// user contract
+	async reigster (ctx, pk, r, ext){
+		await user.register(ctx, pk, r, ext);
+	}
+
+	async getAllUser(ctx){
+		return await user.getALlUser(ctx);
+	}
+
+	async getUserCount(ctx){
+		return await user.getUsercount(ctx);
+	}
+
+	async getUser(ctx, pk){
+		return await user.getUser(ctx, pk);
+	}
+
+
 
 	// order contract
 	async addOrder(ctx, houseid, user, price, arg) {

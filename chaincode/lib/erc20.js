@@ -13,14 +13,12 @@ exports.initUser = async function(ctx, user) {
 };
 
 exports.updateBalance = async function(ctx, key, amount){
-	await utils.putState(ctx, tokenkey(key), {
-		[tokenkey(key)]: amount
-	});
+	await utils.putState(ctx, tokenkey(key), amount);
 };
 
 exports.balanceOf = async function(ctx, user){
 	const r = await utils.readState(ctx, tokenkey(user));
-	return parseInt(JSON.parse(r)[tokenkey(user)]);
+	return parseInt(r);
 };
 
 exports.totalSupply = async function(ctx){
@@ -56,6 +54,5 @@ exports.transfer = async function(ctx, from, to, amount){
 };
 
 exports.getAlltokenList = async function(ctx){
-	let r = await utils.getALlStatus(ctx);
-	return JSON.stringify(r);
+	return await utils.getALlStatus(ctx, 'token');
 };

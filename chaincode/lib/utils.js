@@ -25,11 +25,15 @@ exports.deleteAsset = async function (ctx, id) {
 	return ctx.stub.deleteState(id);
 };
 
-exports.getALlStatus = async function(ctx){
+exports.getALlStatus = async function(ctx, prefix){
+	if (!prefix){
+		throw new Error('no prefix');
+	}
 	const allResults = [];
 	const iterator = await ctx.stub.getStateByRange('', '');
 	let result = await iterator.next();
 	while (!result.done) {
+		const key = result.value.key.toString();
 		const strValue = Buffer.from(result.value.value.toString()).toString('utf8');
 		let record;
 		try {
@@ -38,10 +42,15 @@ exports.getALlStatus = async function(ctx){
 			console.log(err);
 			record = strValue;
 		}
-		allResults.push(record);
+
+		if(key.split(':')[0] === prefix){
+			allResults.push({
+				[key]: record
+			});
+		}
 		result = await iterator.next();
 	}
-	return allResults;
+	return JSON.stringify(allResults);
 };
 
 

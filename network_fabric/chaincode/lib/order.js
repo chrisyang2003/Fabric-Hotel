@@ -48,7 +48,7 @@ exports.getAllorder = async function(ctx){
 };
 
 exports.payOrder = async function(ctx, orderno, type, user){
-	const orderinfo = JSON.parse((await this.getOrder(ctx, orderno)));
+	const orderinfo = JSON.parse((await this.getOrder(ctx, orderno))).value;
 	const price = orderinfo.price;
 
 	if (type === 'erc20'){

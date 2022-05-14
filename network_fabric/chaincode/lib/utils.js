@@ -13,7 +13,10 @@ exports.readState = async function (ctx, id) {
 };
 
 exports.putState = async function (ctx, id, content) {
-	let r = await ctx.stub.putState(id, Buffer.from(JSON.stringify(content)));
+	let r = await ctx.stub.putState(id, Buffer.from(JSON.stringify({
+		key: id.split(':')[1],
+		value: content
+	})));
 	return r;
 };
 
@@ -34,6 +37,7 @@ exports.getALlStatus = async function(ctx, prefix){
 	let result = await iterator.next();
 	while (!result.done) {
 		const key = result.value.key.toString();
+		const keysplit = key.split(':');
 		const strValue = Buffer.from(result.value.value.toString()).toString('utf8');
 		let record;
 		try {
@@ -43,10 +47,8 @@ exports.getALlStatus = async function(ctx, prefix){
 			record = strValue;
 		}
 
-		if(key.split(':')[0] === prefix){
-			allResults.push({
-				[key]: record
-			});
+		if(keysplit[0] === prefix){
+			allResults.push(record);
 		}
 		result = await iterator.next();
 	}

@@ -18,7 +18,7 @@ exports.updateBalance = async function(ctx, key, amount){
 
 exports.balanceOf = async function(ctx, user){
 	const r = await utils.readState(ctx, tokenkey(user));
-	return parseInt(r);
+	return parseInt(JSON.parse(r).value);
 };
 
 exports.totalSupply = async function(ctx){

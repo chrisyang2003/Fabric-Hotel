@@ -192,10 +192,10 @@ describe('Asset Transfer Events Tests', () => {
 			expect(5).to.eql((await assetTransfer.balanceOf(transactionContext, 'bob')));
 
 			let exp = [
-				{'token:totalSupply': 10},
-				{'token:hotelaccount':0},
-				{'token:alice': 5},
-				{'token:bob': 5}
+				{key: 'totalSupply', value : 10},
+				{key: 'hotelaccount', value: 0},
+				{key: 'alice', value: 5},
+				{key: 'bob', value: 5}
 			];
 			let r = await assetTransfer.getTokenList(transactionContext);
 			expect(JSON.stringify(exp)).to.eql(r);
@@ -207,14 +207,17 @@ describe('Asset Transfer Events Tests', () => {
 			let assetTransfer = new AssetTransfer();
 			let orderno = await assetTransfer.addOrder(transactionContext, '1', 'alice', '100', '{}');
 			let exp = {
-				orderno: getOrderno(new Date()),
-				timestamp: parseInt(new Date().getTime() / 1000),
-				trx: '8ab8f29eda6985326159b4968ddf7daf1cafe4116fc0be3341dad98848f79d2b',
-				houseid: '1',
-				user: 'alice',
-				price: '100',
-				liver: '{}',
-				status: '待付款'
+				key: orderno,
+				value: {
+					orderno: getOrderno(new Date()),
+					timestamp: parseInt(new Date().getTime() / 1000),
+					trx: '8ab8f29eda6985326159b4968ddf7daf1cafe4116fc0be3341dad98848f79d2b',
+					houseid: '1',
+					user: 'alice',
+					price: '100',
+					liver: '{}',
+					status: '待付款'
+				}
 			};
 			expect(JSON.stringify(exp)).to.eq((await assetTransfer.getOrder(transactionContext, orderno)));
 		});
@@ -233,14 +236,17 @@ describe('Asset Transfer Events Tests', () => {
 
 			orderno = await assetTransfer.addOrder(transactionContext, '1', 'alice', '100', '{}');
 			let exp = {
-				orderno: orderno,
-				timestamp: parseInt(time.getTime() / 1000),
-				trx: '8ab8f29eda6985326159b4968ddf7daf1cafe4116fc0be3341dad98848f79d2b',
-				houseid: '1',
-				user: 'alice',
-				price: '100',
-				liver: '{}',
-				status: '待付款'
+				key: orderno,
+				value: {
+					orderno: orderno,
+					timestamp: parseInt(time.getTime() / 1000),
+					trx: '8ab8f29eda6985326159b4968ddf7daf1cafe4116fc0be3341dad98848f79d2b',
+					houseid: '1',
+					user: 'alice',
+					price: '100',
+					liver: '{}',
+					status: '待付款'
+				}
 			};
 			expect(JSON.stringify(exp)).to.eq((await assetTransfer.getOrder(transactionContext, orderno)));
 
@@ -275,7 +281,12 @@ describe('Asset Transfer Events Tests', () => {
 			expect(0).to.eq((await assetTransfer.getUserCount(transactionContext)));
 			await assetTransfer.reigster(transactionContext, '123', '456', '{}');
 			expect(1).to.eq((await assetTransfer.getUserCount(transactionContext)));
-			let exp = { id: 1, pk: '123', r: '456', ext: '{}', lastproof: '' };
+			let exp = {
+				key: '123',
+				value: {
+					id: 1, pk: '123', r: '456', ext: '{}', lastproof: ''
+				}
+			};
 			expect(JSON.stringify(exp)).to.eq((await assetTransfer.getUser(transactionContext, '123')));
 
 		});
@@ -291,12 +302,11 @@ describe('Asset Transfer Events Tests', () => {
 
 			await assetTransfer.payOrder(transactionContext, orderno, 'erc20', 'alice');
 			expect(100).to.eql((await assetTransfer.balanceOf(transactionContext, 'alice')));
-
 			expect(100).to.eql((await assetTransfer.balanceOf(transactionContext, 'hotelaccount')));
 
 			let r = await assetTransfer.getOrder(transactionContext, orderno);
 			r = JSON.parse(r);
-			expect('已支付').to.eq(r.status);
+			expect('已支付').to.eq(r.value.status);
 		});
 	});
 });

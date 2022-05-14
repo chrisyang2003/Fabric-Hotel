@@ -238,7 +238,6 @@ export default {
     this.listLoading = true;
     fetchList(this.listQuery).then((rep) => {
       this.list = rep.data.data;
-
       console.log(this.list);
       this.listLoading = false;
     });

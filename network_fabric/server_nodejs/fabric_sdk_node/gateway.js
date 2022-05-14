@@ -8,7 +8,7 @@ const fs = require('fs');
 exports.gateway = async function main(channelName) {
     try {
         // load the network configuration
-        const ccpPath = path.resolve(__dirname, '..', '..', 'network_fabric','test-network', 'organizations', 'peerOrganizations', 'org1.example.com', 'connection-org1.json');
+        const ccpPath = path.resolve(__dirname, '..', '..', 'network','test-network', 'organizations', 'peerOrganizations', 'org1.example.com', 'connection-org1.json');
         const ccp = JSON.parse(fs.readFileSync(ccpPath, 'utf8'));
 
         // Create a new file system based wallet for managing identities.
@@ -46,7 +46,3 @@ exports.gateway = async function main(channelName) {
     }
 }
 
-// main().then((res) => {
-//     console.log(res);
-    
-// })

@@ -6,6 +6,8 @@ const {BlockDecoder} = require('fabric-common')
 const { Wallet } = require('fabric-network')
 
 
+
+
 app.use((req, res, next) => {
 
   res.header("Access-Control-Allow-Origin", "*")
@@ -69,7 +71,7 @@ app.get('/wallet/', async(req, res, next) => {
     const rho = decrypted.rho
     var privateMoney = {
       isused: false,                  // 是否使用
-      value: 0,                       //面额
+      value: 0,                       // 面额
       nullifier: Hash(sk + rho),      // 序列号
       Commitment: Hash(pk + v + rho), // 承诺
       rho: rho,                       // 随机数
@@ -81,6 +83,20 @@ app.get('/wallet/', async(req, res, next) => {
 
   privatebalance += 1
   res.send(JSON.stringify({balance: privatebalance}))
+})
+
+app.get('/wallet/erc20/balance', async(req, res, next) => {
+  const network = await fabric.gateway('mychannel')
+  const contract = network.getContract('hotel');
+
+  const user = req.query.user;
+  let r = await contract.evaluateTransaction('balanceOf', user);
+  res.send({
+    balance: r.toString()
+  })
+
+
+  res.send(JSON.stringify({balance: 60}) + '\n')
 })
 
 app.get('/wallet/balance', async(req, res, next) => {

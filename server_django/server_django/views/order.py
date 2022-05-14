@@ -1,6 +1,5 @@
 from os import stat
 from django.http import JsonResponse
-from pydantic import Json
 
 
 def add(_):

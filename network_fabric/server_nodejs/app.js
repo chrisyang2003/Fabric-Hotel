@@ -53,12 +53,10 @@ function ismine(){
 }
 
 
-app.get('/user/getlist', async(req, res, next) =>{
+app.get('/user/userlist', async(req, res, next) =>{
   const network = await fabric.gateway('mychannel')
-  const contract = network.getContract('t8');
-
-  
-  var result = await contract.evaluateTransaction('info', '{"name":"123"}');
+  const contract = network.getContract('hotel');
+  var result = await contract.evaluateTransaction('getAllUser');
   res.send(result.toString())
 })
 
@@ -85,7 +83,39 @@ app.get('/wallet/', async(req, res, next) => {
   res.send(JSON.stringify({balance: privatebalance}))
 })
 
-app.get('/wallet/erc20/balance', async(req, res, next) => {
+
+
+
+// erc20
+
+app.get('/erc20/tokeninfo', async(req, res, next) => {
+  const network = await fabric.gateway('mychannel')
+  const contract = network.getContract('hotel');
+
+  res.send(JSON.stringify({
+    tokenName: (await contract.evaluateTransaction('tokenName')).toString(),
+    Symbol: (await contract.evaluateTransaction('Symbol')).toString(),
+    totalSupply : (await contract.evaluateTransaction('totalSupply')).toString(),
+  }))
+})
+
+app.get('/erc20/tokenlist', async(req, res, next) => {
+  const network = await fabric.gateway('mychannel')
+  const contract = network.getContract('hotel');
+
+  let r = await contract.evaluateTransaction('getTokenList');
+  r = JSON.parse(r.toString());
+  
+  res.send(r.map(ele => {
+    const key = Object.keys(ele)[0];
+    return {
+      name: key.split(':')[1],
+      balance: ele[key]
+    }
+  }));
+})
+
+app.get('/erc20/balance', async(req, res, next) => {
   const network = await fabric.gateway('mychannel')
   const contract = network.getContract('hotel');
 
@@ -94,10 +124,9 @@ app.get('/wallet/erc20/balance', async(req, res, next) => {
   res.send({
     balance: r.toString()
   })
-
-
-  res.send(JSON.stringify({balance: 60}) + '\n')
 })
+
+
 
 app.get('/wallet/balance', async(req, res, next) => {
   res.send(JSON.stringify({balance: 60}) + '\n')
@@ -107,10 +136,12 @@ app.get('/wallet/hotel', async(req, res, next) => {
   res.send(JSON.stringify({balance: 40}) + '\n')
 })
 
+
+
 app.get('/order/getall', async (req, res, next) => {
   try{
     const network = await fabric.gateway('mychannel')
-    const contract = network.getContract('a1');
+    const contract = network.getContract('hotel');
 
     let result = await contract.evaluateTransaction('getAllorder');
     res.send(JSON.parse(result))

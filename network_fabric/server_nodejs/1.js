@@ -1,2 +1,12 @@
-let a = ['GetTransactionByID','mychannel', '8ab8f29eda6985326159b4968ddf7daf1cafe4116fc0be3341dad98848f79d2b']    
-console.log(JSON.stringify(a));
+let a = [1,2,3]
+
+
+a = a.map(ele => {
+    return ele *2
+})
+
+console.log(a);
+
+
+console.log('1'.padEnd(6,'2'));
+

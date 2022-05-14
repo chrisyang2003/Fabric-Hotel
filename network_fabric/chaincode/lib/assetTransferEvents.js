@@ -33,6 +33,17 @@ class mycontract extends Contract {
 		return await user.getUser(ctx, pk);
 	}
 
+	// private token
+
+	// 承诺总数
+
+	// 已经公开序列号总数
+
+	// 序列号列表
+
+	// 发行量
+	
+
 
 
 	// order contract
@@ -76,7 +87,7 @@ class mycontract extends Contract {
 		await erc20.initUser(ctx, user);
 	}
 
-	async Mint(ctx, user, amount) {
+	async mint(ctx, user, amount) {
 		await erc20.mint(ctx, user, amount);
 	}
 

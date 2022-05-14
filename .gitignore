@@ -1,3 +1,13 @@
 __pycache__/
 
 **/.idea/
+
+**/node_modules
+
+
+server_nodejs/fabric_sdk_node/wallet/*
+**/vendor
+
+
+# explorer
+network_fabric/explorer/organizations/

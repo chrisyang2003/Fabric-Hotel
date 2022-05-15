@@ -1,43 +1,18 @@
 <template>
 	<view class="">
 		<!-- 顶部导航 -->
-		<fa-navbar :title="is_bind ? '创建或绑定账号' : '注册'"></fa-navbar>
+		<fa-navbar title="注册"></fa-navbar>		
 		<view class="login">
 			<view class="u-text-center" v-if="is_bind"><u-avatar :size="150" :src="vuex_third.avatar"></u-avatar></view>
 			<view class="u-text-center u-p-t-20" v-if="is_bind">{{ vuex_third.nickname }}</view>
 			<view class="u-m-t-30" v-if="!is_wx_phone || !is_bind">
 				<u-form :model="form" ref="uForm">
 					<block v-if="!is_bind">
-						<u-form-item :label-position="labelPosition" label="用户名:" prop="username" label-width="120">
-							<u-input :border="border" placeholder="请填写用户名" v-model="form.username" />
-						</u-form-item>
-						<u-form-item :label-position="labelPosition" label="密 码:" prop="password" label-width="120">
-							<u-input :password-icon="true" :border="border" type="password" v-model="form.password" placeholder="请输入密码"></u-input>
+						<u-form-item :label-position="labelPosition" label="私钥:" prop="username" label-width="150">
+							<u-input :border="border" placeholder="通过私钥唯一确定用户，请牢记" v-model="form.password" />
 						</u-form-item>
 					</block>
-					<u-form-item :label-position="labelPosition" label="手机号:" prop="mobile" label-width="120">
-						<u-input :border="border" placeholder="请输入手机号" v-model="form.mobile" type="number"></u-input>
-					</u-form-item>
-					<u-form-item :label-position="labelPosition" label="验证码:" prop="code" label-width="120">
-						<u-input :border="border" placeholder="请输入验证码" v-model="form.code" type="text"></u-input>
-						<u-button
-							hover-class="none"
-							type="primary"
-							slot="right"
-							:custom-style="{ backgroundColor: theme.bgColor, color: theme.color }"
-							size="mini"
-							@click="getCode"
-						>
-							{{ codeTips }}
-						</u-button>
-					</u-form-item>
 				</u-form>
-			</view>
-			<view v-if="is_wx_phone && is_bind" class="" style="height: 150rpx;"></view>
-
-			<view class="u-p-t-30 u-text-center u-flex">
-				<u-checkbox :active-color="theme.bgColor" v-model="agreeChecked" name="agree">阅读并同意</u-checkbox>
-				<text class="u-font-30 agree" @click="goPage('/pages/my/agreement')" :style="[{ color: theme.bgColor }]">《用户协议》</text>
 			</view>
 
 			<view class="u-m-t-80" v-if="!is_wx_phone || !is_bind">
@@ -74,27 +49,7 @@ import { loginfunc } from '@/common/fa.mixin.js';
 export default {
 	mixins: [loginfunc],
 	onLoad(e) {
-		if(e.invite_id){
-			this.$u.vuex('vuex_invite_id',e.invite_id);
-		}
-		this.is_bind = e.bind || '';
-		if (!this.is_bind) {
-			this.labelPosition = 'left';
-			this.rules.username = [
-				{
-					required: true,
-					message: '请输入用户名',
-					trigger: ['change', 'blur']
-				}
-			];
-			this.rules.password = [
-				{
-					required: true,
-					message: '请输入密码',
-					trigger: 'change'
-				}
-			];
-		}
+	
 	},
 	onReady() {
 		if (!this.is_bind) {
@@ -123,88 +78,26 @@ export default {
 			labelPosition: 'top',
 			border: false,
 			form: {
-				username: '',
-				password: '',
-				mobile: '',
-				code: ''
+				password: null,
 			},
-			rules: {
-				mobile: [
-					{
-						required: true,
-						message: '请输入手机号码',
-						trigger: 'change'
-					},
-					{
-						// 自定义验证函数，见上说明
-						validator: (rule, value, callback) => {
-							return this.$u.test.mobile(value);
-						},
-						message: '手机号码不正确',
-						trigger: ['change', 'blur']
-					}
-				],
-				code: [
-					{
-						required: true,
-						message: '请输入短信验证码',
-						trigger: 'change'
-					}
-				]
-			},
-			codeTips: '',
-			errorType: ['message']
-		};
+		}
 	},
 	methods: {
 		codeChange(text) {
 			this.codeTips = text;
 		},
-		// 获取验证码
-		getCode: async function() {
-			if (!this.$u.test.mobile(this.form.mobile)) {
-				this.$u.toast('手机号码格式不正确！');
-				return;
-			}
-			if (this.$refs.uCode.canGetCode) {
-				let res = await this.$api.getSmsSend({
-					mobile: this.form.mobile,
-					event: this.is_bind ? 'bind' : 'register'
-				});
-				this.$u.toast(res.msg);
-				if (res.code == 1) {
-					this.$refs.uCode.start();
-				}
-			} else {
-				this.$u.toast('倒计时结束后再发送');
-			}
-		},
 		register() {
-			if (!this.agreeChecked) {
-				this.$refs.uToast.show({
-					title: '请阅读并同意遵守《用户协议》',
-					type: 'error'
-				});
-				return;
-			}
-			this.$refs.uForm.validate(valid => {
-				if (valid) {
-					this.is_bind ? this.goBind() : this.goReg();
-				} else {
-					this.$u.toast('验证失败');
-				}
-			});
+			this.goReg();
 		},
 		//去注册
 		goReg: async function() {
-			if (this.vuex_invite_id) {
-				this.form.vuex_invite_id = this.vuex_invite_id;
-			}
-			let res = await this.$api.goRegister(this.form);
-			if (!res.code) {
-				this.$u.toast(res.msg);
-				return;
-			}
+			console.log(this.form);
+			
+			let res = await this.$api.goRegister({
+				passwd:this.form.password
+				});
+			
+			console.log(res)
 			this.$u.vuex('vuex_token', res.data.token);
 			this.$u.vuex('vuex_user', res.data.user || {});
 			this.success(3);

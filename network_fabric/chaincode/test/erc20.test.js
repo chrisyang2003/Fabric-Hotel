@@ -130,7 +130,7 @@ describe('Asset Transfer Events Tests', () => {
 			let assetTransfer = new AssetTransfer();
 			await assetTransfer.InitLedger(transactionContext);
 
-			await assetTransfer.Mint(transactionContext, 'alice', 10);
+			await assetTransfer.mint(transactionContext, 'alice', 10);
 
 			expect(10).to.eql((await assetTransfer.balanceOf(transactionContext, 'alice')));
 			expect(10).to.eql((await assetTransfer.totalSupply(transactionContext)));
@@ -143,7 +143,7 @@ describe('Asset Transfer Events Tests', () => {
 			let assetTransfer = new AssetTransfer();
 			await assetTransfer.InitLedger(transactionContext);
 
-			await assetTransfer.Mint(transactionContext, 'alice', '10');
+			await assetTransfer.mint(transactionContext, 'alice', '10');
 
 			expect(10).to.eql((await assetTransfer.balanceOf(transactionContext, 'alice')));
 			expect(10).to.eql((await assetTransfer.totalSupply(transactionContext)));
@@ -163,7 +163,7 @@ describe('Asset Transfer Events Tests', () => {
 			let assetTransfer = new AssetTransfer();
 			await assetTransfer.InitLedger(transactionContext);
 
-			await assetTransfer.Mint(transactionContext, 'alice', '10');
+			await assetTransfer.mint(transactionContext, 'alice', '10');
 
 			expect(10).to.eql((await assetTransfer.balanceOf(transactionContext, 'alice')));
 			expect(10).to.eql((await assetTransfer.totalSupply(transactionContext)));
@@ -181,7 +181,7 @@ describe('Asset Transfer Events Tests', () => {
 			let assetTransfer = new AssetTransfer();
 			await assetTransfer.InitLedger(transactionContext);
 
-			await assetTransfer.Mint(transactionContext, 'alice', '10');
+			await assetTransfer.mint(transactionContext, 'alice', '10');
 
 			expect(10).to.eql((await assetTransfer.balanceOf(transactionContext, 'alice')));
 			expect(10).to.eql((await assetTransfer.totalSupply(transactionContext)));
@@ -192,12 +192,12 @@ describe('Asset Transfer Events Tests', () => {
 			expect(5).to.eql((await assetTransfer.balanceOf(transactionContext, 'bob')));
 
 			let exp = [
-				{key: 'totalSupply', value : 10},
 				{key: 'hotelaccount', value: 0},
 				{key: 'alice', value: 5},
 				{key: 'bob', value: 5}
 			];
 			let r = await assetTransfer.getTokenList(transactionContext);
+			console.log(r);
 			expect(JSON.stringify(exp)).to.eql(r);
 		});
 	});
@@ -275,7 +275,7 @@ describe('Asset Transfer Events Tests', () => {
 		it('should return success on addUser', async () => {
 			let assetTransfer = new AssetTransfer();
 			await assetTransfer.InitLedger(transactionContext);
-			await assetTransfer.Mint(transactionContext, 'alice', '10');
+			await assetTransfer.mint(transactionContext, 'alice', '10');
 			await assetTransfer.addOrder(transactionContext, '1', 'alice', '100', '{}');
 
 			expect(0).to.eq((await assetTransfer.getUserCount(transactionContext)));
@@ -296,7 +296,7 @@ describe('Asset Transfer Events Tests', () => {
 		it('should return success on payorder', async () => {
 			let assetTransfer = new AssetTransfer();
 			await assetTransfer.InitLedger(transactionContext);
-			await assetTransfer.Mint(transactionContext, 'alice', '200');
+			await assetTransfer.mint(transactionContext, 'alice', '200');
 			let orderno = await assetTransfer.addOrder(transactionContext, '1', 'alice', '100', '{}');
 
 

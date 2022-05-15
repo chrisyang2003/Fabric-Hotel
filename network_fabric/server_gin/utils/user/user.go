@@ -11,7 +11,8 @@ import (
 	"math/big"
 	"math/rand"
 	"net/http"
-
+	
+	"server_gin/utils/rsa"
 	"github.com/gin-gonic/gin"
 	"server_gin/utils/rsa"
 )
@@ -135,7 +136,7 @@ func Register(c *gin.Context) {
 	}
 
 	err = groth16.Verify(newproof, vk, publicWitness)
-
+	
 	sk, pk := rsa.GenRsaKey()
 
 	if err != nil {

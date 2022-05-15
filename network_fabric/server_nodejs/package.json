@@ -10,11 +10,15 @@
   "author": "chrisyy",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.27.2",
     "express": "^4.17.3",
+    "express-jwt": "^5.1.1",
     "fabric-ca-client": "^2.2.11",
     "fabric-common": "^2.2.11",
     "fabric-network": "^2.2.11",
-    "fabric-protos": "^2.2.11"
+    "fabric-protos": "^2.2.11",
+    "jsonwebtoken": "^8.5.1",
+    "request": "^2.88.2"
   },
   "devDependencies": {
     "nodemon": "^2.0.15"

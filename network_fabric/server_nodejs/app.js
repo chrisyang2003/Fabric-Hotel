@@ -1,11 +1,50 @@
 const express = require('express')
 const app = express()
 const port = 3000
-const fabric = require('./fabric_sdk_node/gateway')
-const {BlockDecoder} = require('fabric-common')
-const { Wallet } = require('fabric-network')
 
 
+function parseTime(time, cFormat) {
+  if (arguments.length === 0 || !time) {
+    return null
+  }
+  const format = cFormat || '{y}-{m}-{d} {h}:{i}:{s}'
+  let date
+  if (typeof time === 'object') {
+    date = time
+  } else {
+    if ((typeof time === 'string')) {
+      if ((/^[0-9]+$/.test(time))) {
+        // support "1548221490638"
+        time = parseInt(time)
+      } else {
+        // support safari
+        // https://stackoverflow.com/questions/4310953/invalid-date-in-safari
+        time = time.replace(new RegExp(/-/gm), '/')
+      }
+    }
+
+    if ((typeof time === 'number') && (time.toString().length === 10)) {
+      time = time * 1000
+    }
+    date = new Date(time)
+  }
+  const formatObj = {
+    y: date.getFullYear(),
+    m: date.getMonth() + 1,
+    d: date.getDate(),
+    h: date.getHours(),
+    i: date.getMinutes(),
+    s: date.getSeconds(),
+    a: date.getDay()
+  }
+  const time_str = format.replace(/{([ymdhisa])+}/g, (result, key) => {
+    const value = formatObj[key]
+    // Note: getDay() returns 0 on Sunday
+    if (key === 'a') { return ['日', '一', '二', '三', '四', '五', '六'][value ] }
+    return value.toString().padStart(2, '0')
+  })
+  return time_str
+}
 
 
 app.use((req, res, next) => {
@@ -15,7 +54,7 @@ app.use((req, res, next) => {
   res.header("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PUT")
 
 
-  console.log('[+]', req.url)
+  console.log('[+]', parseTime(new Date()), req.url, )
   // console.log('[+]', req.headers)
   next()
 })
@@ -23,222 +62,37 @@ app.options('/:any', (req, res) => {
   res.send('Hello World!')
 })
 
-app.get('/', (req, res) => {
-  res.send('Hello World!')
-})
-
-app.get('/test', async (req, res) => {
-  const network = await fabric.gateway('mychannel')
-  const contract = network.getContract('t1');
-  var result = await contract.evaluateTransaction('info', '{"name":"123"}');
-  res.send(result.toString())
-})
-
-const contractName = 'a1'
-
-var balance = 0
-app.get('/balance/erc20', async(req, res, next) => {
-  balance += 1
-  res.send(JSON.stringify({balance: balance}))
-})
-
-var privatebalance = 0
-app.get('/balance/private', async(req, res, next) => {
-  privatebalance += 1
-  res.send(JSON.stringify({balance: privatebalance}))
-})
-
-function ismine(){
-  
-}
 
 
-app.get('/user/userlist', async(req, res, next) =>{
-  const network = await fabric.gateway('mychannel')
-  const contract = network.getContract('hotel');
-  var result = await contract.evaluateTransaction('getAllUser');
-  res.send(result.toString())
-})
-
-wallet = []
-app.get('/wallet/', async(req, res, next) => {
-
-  const decrypted = public_key.decrypt(encrypted, 'utf8');
-  if (ismine(decrypted)){
-    const v = decrypted.v
-    const rho = decrypted.rho
-    var privateMoney = {
-      isused: false,                  // 是否使用
-      value: 0,                       // 面额
-      nullifier: Hash(sk + rho),      // 序列号
-      Commitment: Hash(pk + v + rho), // 承诺
-      rho: rho,                       // 随机数
-      timestamp: stamp                // 入包时间
-    }
-    wallet.push(privateMoney)
-  }
-  
-
-  privatebalance += 1
-  res.send(JSON.stringify({balance: privatebalance}))
-})
-
-
-
-
-// erc20
-
-app.get('/erc20/tokeninfo', async(req, res, next) => {
-  const network = await fabric.gateway('mychannel')
-  const contract = network.getContract('hotel');
-
-  res.send(JSON.stringify({
-    tokenName: (await contract.evaluateTransaction('tokenName')).toString(),
-    Symbol: (await contract.evaluateTransaction('Symbol')).toString(),
-    totalSupply : (await contract.evaluateTransaction('totalSupply')).toString(),
-  }))
-})
-
-app.get('/erc20/tokenlist', async(req, res, next) => {
-  const network = await fabric.gateway('mychannel')
-  const contract = network.getContract('hotel');
-
-  let r = await contract.evaluateTransaction('getTokenList');
-  r = JSON.parse(r.toString());
-  
-  res.send(r.map(ele => {
-    const key = Object.keys(ele)[0];
-    return {
-      name: key.split(':')[1],
-      balance: ele[key]
-    }
-  }));
-})
-
-app.get('/erc20/balance', async(req, res, next) => {
-  const network = await fabric.gateway('mychannel')
-  const contract = network.getContract('hotel');
-
-  const user = req.query.user;
-  let r = await contract.evaluateTransaction('balanceOf', user);
-  res.send({
-    balance: r.toString()
-  })
-})
-
-
-
-app.get('/wallet/balance', async(req, res, next) => {
-  res.send(JSON.stringify({balance: 60}) + '\n')
-})
-
-app.get('/wallet/hotel', async(req, res, next) => {
-  res.send(JSON.stringify({balance: 40}) + '\n')
-})
-
-
-
-app.get('/order/getall', async (req, res, next) => {
-  try{
-    const network = await fabric.gateway('mychannel')
-    const contract = network.getContract('hotel');
-
-    let result = await contract.evaluateTransaction('getAllorder');
-    res.send(JSON.parse(result))
-  }catch(err){
-    next(err)
-  }
-})
-
-app.get('/order/add', async (req, res, next) => {
-  try{
-    const network = await fabric.gateway('mychannel')
-    const contract = network.getContract(contractName);
-  
-    order = {
-      "id":1,
-      "data":{
-        "name":'chris',
-        "age":'18'
-      }
-    }
-    // await contract.submitTransaction('CreateAsset', '12312333', '1');
-    // result = await contract.submitTransaction('CreateAsset', 'asdasdsd', 'yellow', '5', 'Tom', '1300');
-    // result = await contract.submitTransaction('CreateAsset', '1',JSON.stringify(order));
-    // console.log(result.toString())
-  }catch(err){
-    next(err)
-  }
-})
-
-
-
-async function getTrxDetailById(id){
-  const network = await fabric.gateway('mychannel')
-    const contract = network.getContract('qscc');
-
-    var resultByte = await contract.evaluateTransaction('GetTransactionByID','mychannel', id);
-    const unSerialization = BlockDecoder.decodeTransaction(resultByte).transactionEnvelope.payload
-    
-    const header = unSerialization.header.channel_header
-    const mspid = unSerialization.header.signature_header.creator.mspid
-
-    const writeset = unSerialization.data.actions[0].payload.action.proposal_response_payload.extension.results.ns_rwset[1].rwset.writes[0]
-    const writekey = writeset.key
-    const writedata = writeset.value.toString()
-    const ccname = unSerialization.data.actions[0].payload.chaincode_proposal_payload.input.chaincode_spec.chaincode_id.name
-
-    return {
-        writekey:writekey,
-        timestamp: header.timestamp,
-        channel_id: header.channel_id,
-        trx: header.tx_id,
-        ccname: ccname,
-        mspid:mspid,
-        data: writedata
-    }
-}
-
-app.get('/order/get', async (req, res, next) => {
-  try{
-    const id = req.query.id
-    if (!id){
-      res.status(400).send('empty!')
-      return
-    }
-    const network = await fabric.gateway('mychannel')
-    const contract = network.getContract('a1');
-
-    result = await contract.evaluateTransaction('getOrder', id);
-    const trx = JSON.parse(result).trx
-    res.send(await getTrxDetailById(trx))
-  }catch(err){
-    next(err)
-  }
-})
-
-
-
-
-app.get('/trx/get', async (req, res, next) => {
-  try{    
-    const id = req.query.id
-    if (!id){
-      res.send('id为空')
-      return
-    }
-    
-    res.send(msg)
-
-  }catch(err){
-    next(err)
-  }
-})
-
-
-app.use(function(err, req, res, next) {
+app.use(function (err, req, res, next) {
   res.status(500).send(err.stack.toString());
 });
+
+const userRouter = require('./router/user');
+const orderRouter = require('./router/order');
+const trxRouter = require('./router/trx');
+const erc20Router = require('./router/erc20');
+
+
+const expressJwt = require('express-jwt');
+// const jwtauth=expressjwt({secret:key})
+const auth = expressJwt({secret: 'secret12345'}).unless({
+  path: [
+    '/order/getall',
+    '/favicon.ico',
+    '/api/user/register',
+    '/order/get'
+  ]
+})
+//   path:['/users','/login', '/api/user/register']})
+app.use(auth)
+
+
+app.use('/api/user', userRouter);
+app.use('/order', orderRouter);
+app.use('/trx', trxRouter);
+app.use('/erc20', erc20Router);
+
 
 
 app.listen(port, () => {

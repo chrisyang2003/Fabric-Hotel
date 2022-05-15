@@ -14,7 +14,8 @@
     "fabric-ca-client": "^2.2.11",
     "fabric-common": "^2.2.11",
     "fabric-network": "^2.2.11",
-    "fabric-protos": "^2.2.11"
+    "fabric-protos": "^2.2.11",
+    "request": "^2.88.2"
   },
   "devDependencies": {
     "nodemon": "^2.0.15"

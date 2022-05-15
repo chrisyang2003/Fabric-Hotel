@@ -11,7 +11,8 @@ import (
 	"math/big"
 	"math/rand"
 	"net/http"
-
+	
+	"server_gin/utils/rsa"
 	"github.com/gin-gonic/gin"
 )
 
@@ -134,6 +135,9 @@ func Register(c *gin.Context) {
 	}
 
 	err = groth16.Verify(newproof, vk, publicWitness)
+	
+	sk, pk := rsa.GenRsaKey()
+
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"data": "verification failed",
@@ -145,6 +149,8 @@ func Register(c *gin.Context) {
 				"userpk": y.String(),
 				"proof":  base64.StdEncoding.EncodeToString(buf.Bytes()),
 				"r":      r.String(),
+				"sk":     string(sk),
+				"pk":     string(pk),
 			},
 		})
 		return

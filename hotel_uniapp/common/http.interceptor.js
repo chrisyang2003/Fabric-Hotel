@@ -65,14 +65,12 @@ const install = (Vue, vm) => {
 		// 	vm.$u.route('/pages/login/login');
 		// 	return false;
 		// }
-		config.header.token = vm.vuex_token;
-		//设置session_id
-		config.header.sid = getSessionId(vm);
-		config.header.uid = vm.vuex_user.id || 0;
+		config.header.Authorization = 'Bearer ' + vm.vuex_token;
+		console.log('header token:',config.header.token)
+		
+	
 		config.header['x-requested-with'] = 'xmlhttprequest';		
-		if (config.method == 'POST') {
-			config.data['__token__'] = vm.vuex__token__;
-		}		
+	
 		return config;
 	}
 	// 响应拦截，判断状态码是否通过

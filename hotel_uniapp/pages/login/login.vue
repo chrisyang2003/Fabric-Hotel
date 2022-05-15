@@ -4,18 +4,20 @@
 		<fa-navbar title="登录"></fa-navbar>
 		<view class="login">			
 			<view class="u-m-t-50">
-				<u-form :model="form" :rules="rules" ref="uForm" :errorType="errorType">
-					<u-form-item :label-position="labelPosition" label="账号:" prop="account" left-icon="account" label-width="120">
-						<u-input :border="border" placeholder="邮箱/手机/用户名" v-model="form.account" />
+				<u-form :model="form" ref="uForm" :errorType="errorType">
+					<u-form-item :label-position="labelPosition" label="用户公钥: " prop="account" left-icon="account" label-width="120">
+						<u-input :border="border" placeholder="请输入用户公钥" v-model="form.account" />
 					</u-form-item>
-					<u-form-item :label-position="labelPosition" label="密码:" prop="password" left-icon="lock" label-width="120" v-if="!border">
-						<u-input :password-icon="true" :border="border" type="password" v-model="form.password" placeholder="请输入密码"></u-input>
+					<u-form-item v-if="!proofLogin" :label-position="labelPosition" label="证明:" prop="password" left-icon="lock" label-width="120">
+						<u-input :password-icon="true"  placeholder="请输入证明Proof" :border="border" type="password" v-model="form.password"></u-input>
+					</u-form-item>
+
+					<u-form-item v-if="proofLogin" :label-position="labelPosition" label="密码:" prop="password" left-icon="lock" label-width="120">
+						<u-input  placeholder="请输入密码" type="password"></u-input>
 					</u-form-item>
 
 					<u-switch v-model="proofLogin" style="margin-top: 10px"></u-switch>
-					<u-form-item v-if="proofLogin" :label-position="labelPosition" label="Proof 登陆" prop="password" left-icon="lock" label-width="120">
-						<u-input  placeholder="请输入待认证proof"></u-input>
-					</u-form-item>
+				
 					
 				</u-form>
 			</view>
@@ -27,14 +29,7 @@
 				<!-- <view class="" @click="goPage('/pages/login/forgetpwd')">忘记密码</view> -->
 				<view class="" @click="goPage('/pages/login/register')">注册账号</view>
 			</view>
-			<!-- <view class="u-text-center other" v-if="isThreeLogin">
-				<u-grid :col="1" :border="false">
-					<u-grid-item @click="goThreeLogin">
-						<u-icon name="weixin-fill" color="#53c240" :size="50"></u-icon>
-						<view class="grid-text">微信</view>
-					</u-grid-item>
-				</u-grid>
-			</view> -->
+
 		</view>
 	</view>
 </template>
@@ -54,13 +49,10 @@ export default {
 		}
 		// #endif
 	},
-	// 必须要在onReady生命周期，因为onLoad生命周期组件可能尚未创建完毕
-	onReady() {
-		this.$refs.uForm.setRules(this.rules);
-	},
+
 	data() {
 		return {
-			proofLogin: true,
+			proofLogin: false,
 			labelPosition: 'top',
 			border: false,
 			errorType: ['message'],
@@ -68,23 +60,7 @@ export default {
 				account: '',
 				password: ''
 			},
-			rules: {
-				account: [
-					{
-						required: true,
-						message: '请输入账号',
-						// 可以单个或者同时写两个触发验证方式
-						trigger: ['change', 'blur']
-					}
-				],
-				password: [
-					{
-						required: true,
-						message: '请输入密码',
-						trigger: 'change'
-					}
-				]
-			},
+
 			isThreeLogin: false
 		};
 	},
@@ -103,6 +79,10 @@ export default {
 			// #endif
 		},
 		goLogin: function() {
+
+			this.$u.toast('登陆失败');
+			return
+
 			this.$refs.uForm.validate(async valid => {
 				if (valid) {					
 					let res = await this.$api.goLogin(this.form);

@@ -131,6 +131,6 @@ def booking(_):
         "livenums": resp.livenums,
         "calendar": calendar,
         "store": {"id": 1, "name": "测试", "latitude": "22.547", "longitude": "114.085947", "address": "1"}, "type": {"id": 23, "name": "新房特惠", "type_text": ""}, "status_text": "上架"}, 
-        "lodger":[{"id":1,"user_id":112,"name":"杨佳立","type":0,"idnumber":"50023320000103031X", "age":22},
-        {"id":2,"user_id":14,"name":"吴亦凡","type":0,"idnumber":"50023320000103031X", "age":17}]}}
+        "lodger":[{"id":1,"user_id":112,"name":"梨花(大于18岁)","type":0,"idnumber":"50023320000103031X", "age":22},
+        {"id":2,"user_id":14,"name":"李华(小于18岁)","type":0,"idnumber":"50023320000103031X", "age":17}]}}
     return JsonResponse(data)

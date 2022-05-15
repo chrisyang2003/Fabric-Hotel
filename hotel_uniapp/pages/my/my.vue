@@ -104,25 +104,16 @@ export default {
 		getUserIndex: async function() {
 			let res = await this.$api.getUserIndex();
 			uni.stopPullDownRefresh();
+
+			
 			if (res.code==1) {
-				this.$u.vuex('vuex_user', res.data.userInfo || {});				
+				this.$u.vuex('vuex_user', res.data.user);				
 			}else{
 				this.$u.toast(res.msg);
 				return;
 			}
 		},
-		toSignin(){
-			if (!this.vuex_user.is_install_signin) {
-				this.$refs.uTips.show({
-					title: '请先安装会员签到插件插件或启用该插件',
-					type: 'error',
-					duration: '3000'
-				});
-			
-				return;
-			}
-			this.goPage('/pages/signin/signin',1);
-		},
+
 		editAvatar: async function() {
 			let res = await this.$api.goUserAvatar({
 				avatar: this.form.avatar

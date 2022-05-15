@@ -229,6 +229,14 @@ export default {
 				this.$u.toast('不能超过' + this.info.livenums + '人居住');
 				return;
 			}
+
+			console.log(this.lodger_ids);
+			
+			if (this.lodger_ids == 2){
+				this.$u.toast("年龄不符合要求")
+			}
+
+			return
 			this.$api
 				.addOrder({
 					id: this.id,
@@ -236,17 +244,16 @@ export default {
 					end_time: this.end_time,
 					user_coupon_id:this.coupon.user_coupon_id || '',
 					lodger_ids: this.lodger_ids,
-					type: 0,
-					// #ifdef MP-BAIDU
-					platform: 'baidu'
-					// #endif
+					price: this.houseTotalPrice,
+					
 				})
 				.then(res => {
 					if (res.code) {
 						this.$u.toast(res.msg);
 						if (res.data){
+							console.log(res.data)
 							setTimeout(() => {
-								this.goPage('/pages/order/payment?id=5');
+								this.goPage('/pages/order/payment?id=' + res.data);
 							}, 1000);
 						}
 						

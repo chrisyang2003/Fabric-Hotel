@@ -39,13 +39,14 @@ export default {
   },
   data() {
     return {
-      list: null
+      list: []
     }
   },
   created() {
     getAllorder().then(res => {
-      this.list = res.slice(0,6)
-      console.log(res);
+      res.slice(0, 6).forEach(element => {
+        this.list.push(element.value)
+      });
       
     })
   },

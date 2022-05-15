@@ -139,7 +139,7 @@ export default {
   },
   data() {
     return {
-      list: null,
+      list: [],
       detail: {
         data: null,
         info: null
@@ -161,7 +161,12 @@ export default {
     },
     async getList() {
       this.listLoading = true;
-      this.list = await getAllorder();
+
+      let r =  await getAllorder();
+      r.forEach(element => {
+       this.list.push(element.value) 
+      });
+      console.log(this.list)
       this.listLoading = false;
     },
     async showDetails(id) {

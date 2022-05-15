@@ -33,7 +33,7 @@
 						<u-tag v-if="item.status == 'checkouting'" text="退房中" type="error" shape="circle" />
 					</view>
 				</view>
-				<view class="house">
+				<!-- <view class="house">
 					<fa-swiper :autoplay="false" :list="item.house.images" height="350" :params="{ id: item.id }" @click="clickSwiper"></fa-swiper>
 					<view class="times u-flex u-row-between u-p-20">
 						<view class="">
@@ -55,14 +55,13 @@
 							<view class="text-weight">￥{{ item.amount }}</view>
 						</view>
 					</view>
-				</view>
-				<view class="bar u-p-t-30 u-flex u-row-between">
+				</view> -->
+				
+				<!-- <view class="bar u-p-t-30 u-flex u-row-between">
 					<view class="">
-						<!-- #ifdef MP-WEIXIN -->
 						<view class="u-m-l-15" v-if="!item.subscribe">
 							<u-button type="primary" size="mim" @click="subscribeMessage(item.orderid,index)">订阅消息</u-button>
 						</view>
-						<!-- #endif -->
 					</view>
 					<view class="u-flex u-row-right u-flex-1">
 						<view class="u-m-l-15" v-if="['created', 'paid', 'toshopay'].indexOf(item.status) != -1">
@@ -92,7 +91,7 @@
 							</u-button>
 						</view>
 					</view>
-				</view>
+				</view> -->
 			</view>
 		</view>
 		<u-modal v-model="show" :show-cancel-button="true" content="确定取消订单吗？" @confirm="confirm"></u-modal>
@@ -182,15 +181,18 @@ export default {
 		// 页面数据
 		getOrderList() {
 			this.$api.orderList({ page: this.page, status: this.list[this.current].status }).then(res => {
-				this.status = 'loadmore';
 				if (res.code) {
-					if (this.is_update) {
-						this.orderList = [];
-						this.is_update = false;
-					}
-					this.orderList = [...this.orderList, ...res.data.data];
-					this.has_more = res.data.current_page < res.data.last_page;
-					this.is_empty = !this.orderList.length;
+					// if (this.is_update) {
+					// 	this.orderList = [];
+					// 	this.is_update = false;
+					// }
+					// this.orderList = [...this.orderList, ...res.data.data];
+					this.orderList = res.data
+					
+					console.log(res)
+
+					// this.has_more = res.data.current_page < res.data.last_page;
+					// this.is_empty = !this.orderList.length;
 				}
 			});
 		},

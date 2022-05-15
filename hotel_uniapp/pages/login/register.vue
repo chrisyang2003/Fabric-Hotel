@@ -97,10 +97,10 @@ export default {
 				passwd:this.form.password
 				});
 			
-			console.log(res)
 			this.$u.vuex('vuex_token', res.data.token);
-			this.$u.vuex('vuex_user', res.data.user || {});
-			this.success(3);
+
+			console.log('token:', res.data.token)
+			this.success(2);
 		},
 		// #ifdef MP-WEIXIN
 		getPhoneNumber(e) {

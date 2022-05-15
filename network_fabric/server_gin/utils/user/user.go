@@ -1,4 +1,4 @@
-package router
+package user
 
 import (
 	"bytes"
@@ -15,15 +15,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var b64pk, b64vk string
-
 // 全局变量
+var b64pk, b64vk string
 var r1cs frontend.CompiledConstraintSystem
 var vk groth16.VerifyingKey
 var pk groth16.ProvingKey
 var expCircuit ExpCircuit
-
-// init
 
 type ExpCircuit struct {
 	Y frontend.Variable `gnark:",public"`
@@ -51,7 +48,8 @@ func (circuit *ExpCircuit) Define(curveID ecc.ID, api frontend.API) error {
 	return nil
 }
 
-func Init() {
+// init
+func init() {
 	fmt.Println("user zkp init ...")
 	var err error
 	r1cs, err = frontend.Compile(ecc.BN254, backend.GROTH16, &expCircuit)
@@ -74,14 +72,14 @@ func Init() {
 
 }
 
-func getParams(c *gin.Context) {
+func GetParams(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"vk": b64vk,
 		"pk": b64pk,
 	})
 }
 
-func register(c *gin.Context) {
+func Register(c *gin.Context) {
 	passwd := c.Query("passwd")
 
 	if len(passwd) == 0 {
@@ -100,9 +98,6 @@ func register(c *gin.Context) {
 
 	r.SetUint64(rand.Uint64())
 	x.SetBytes([]byte(passwd))
-
-	fmt.Println(x)
-	fmt.Println(r)
 
 	p, ok := p.SetString("109441214359196376111232028726286375442741822002080171718491020932879042478085", 10)
 	if !ok {
@@ -147,9 +142,9 @@ func register(c *gin.Context) {
 	} else {
 		c.JSON(http.StatusOK, gin.H{
 			"data": gin.H{
-				"userpk": y,
+				"userpk": y.String(),
 				"proof":  base64.StdEncoding.EncodeToString(buf.Bytes()),
-				"r":      r,
+				"r":      r.String(),
 			},
 		})
 		return
@@ -157,34 +152,42 @@ func register(c *gin.Context) {
 
 }
 
-func login(c *gin.Context) {
+func Login(c *gin.Context) {
 
 	// proof base64
 
-	vk := c.Query("vk")
 	proof := c.Query("proof")
 	userpk := c.Query("userpk")
+	r := c.Query("r")
+
+	if len(proof) == 0 || len(userpk) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "empty params",
+		})
+		return
+	}
 
 	userpkint := new(big.Int)
 	userpkint.SetString(userpk, 10)
 
+	rand := new(big.Int)
+	rand.SetString(r, 10)
+
 	publicWitness := &ExpCircuit{
 		Y: frontend.Value(userpkint),
 		G: frontend.Value(big.NewInt(3)),
+		R: frontend.Value(rand),
 	}
 
 	userproof := groth16.NewProof(ecc.BN254)
 	proofbytes, _ := base64.StdEncoding.DecodeString(proof)
 	userproof.ReadFrom(bytes.NewBuffer(proofbytes))
 
-	finalvk := groth16.NewVerifyingKey(ecc.BN254)
-	vkbytes, _ := base64.StdEncoding.DecodeString(vk)
-	finalvk.ReadFrom(bytes.NewBuffer(vkbytes))
+	err := groth16.Verify(userproof, vk, publicWitness)
 
-	err := groth16.Verify(userproof, finalvk, publicWitness)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"data": "error",
+			"error": err,
 		})
 		return
 	} else {
@@ -192,15 +195,5 @@ func login(c *gin.Context) {
 			"data": "good",
 		})
 		return
-	}
-}
-
-func LoadRouter(e *gin.Engine) {
-	router := e.Group("/user")
-	{
-		router.GET("/params", getParams)
-		router.GET("/register", register)
-		router.GET("/login", login)
-		router.GET("/delete", login)
 	}
 }

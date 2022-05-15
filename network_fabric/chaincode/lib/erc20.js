@@ -1,6 +1,8 @@
 // eslint-disable-next-line strict
 const utils = require('./utils');
 
+const totalSupply = 'totalSupply';
+
 function tokenkey(id){
 	return 'token:' + id;
 }
@@ -22,7 +24,7 @@ exports.balanceOf = async function(ctx, user){
 };
 
 exports.totalSupply = async function(ctx){
-	return this.balanceOf(ctx,'totalSupply');
+	return this.balanceOf(ctx,totalSupply);
 };
 exports.mint = async function(ctx, user, amount){
 	if (typeof amount === 'string'){
@@ -30,7 +32,7 @@ exports.mint = async function(ctx, user, amount){
 	}
 	await this.initUser(ctx, user);
 	await this.updateBalance(ctx, user, amount);
-	await this.updateBalance(ctx, 'totalSupply', (await this.totalSupply(ctx)) + amount);
+	await this.updateBalance(ctx, totalSupply, (await this.totalSupply(ctx)) + amount);
 };
 
 exports.transfer = async function(ctx, from, to, amount){
@@ -57,5 +59,15 @@ exports.transfer = async function(ctx, from, to, amount){
 };
 
 exports.getAlltokenList = async function(ctx){
-	return await utils.getALlStatus(ctx, 'token');
+	let r = await utils.getALlStatus(ctx, 'token');
+	r = JSON.parse(r);
+	let res = [];
+
+	r.forEach(ele => {
+		if (ele.key !== totalSupply){
+			res.push(ele);
+		}
+	});
+
+	return JSON.stringify(res);
 };

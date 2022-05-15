@@ -144,7 +144,13 @@ const install = (Vue, vm) => {
 	vm.$api.getSmsSend 		  	= async (params = {}) => await vm.$u.post('http://chrisyy.top:5000/addons/booking/sms/send', params);
 	vm.$api.goLogin 		  	= async (params = {}) => await vm.$u.post('http://chrisyy.top:5000/addons/booking/login/login', params);
 	vm.$api.mobilelogin 	  	= async (params = {}) => await vm.$u.post('http://chrisyy.top:5000/addons/booking/login/mobilelogin', params);
-	vm.$api.goRegister 		  	= async (params = {}) => await vm.$u.post('http://chrisyy.top:5000/addons/booking/login/register', params);
+
+
+
+	vm.$api.goRegister 		  	= async (params = {}) => await vm.$u.get('http://127.0.0.1:7070/user/register', params);
+
+
+
 	vm.$api.goResetpwd 		  	= async (params = {}) => await vm.$u.post('http://chrisyy.top:5000/addons/booking/login/resetpwd', params);
 	vm.$api.gowxLogin 		  	= async (params = {}) => await vm.$u.post('http://chrisyy.top:5000/addons/booking/login/wxLogin', params);
 	vm.$api.goAppLogin 		  	= async (params = {}) => await vm.$u.post('http://chrisyy.top:5000/addons/booking/login/appLogin', params);

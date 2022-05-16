@@ -27,9 +27,7 @@ exports.login = async function(ctx, pk, r, ext){
 };
 
 exports.deleteUser = async function(ctx, pk, r, ext){
-
 	await utils.deleteAsset(ctx, userkey(pk));
-
 };
 exports.updateUser = async function(ctx, pk, r, ext){
 

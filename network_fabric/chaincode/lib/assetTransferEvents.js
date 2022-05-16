@@ -31,7 +31,7 @@ class mycontract extends Contract {
 
 	async getUser(ctx, pk){
 		return await user.getUser(ctx, pk);
-	}
+	}z
 
 	// private token
 

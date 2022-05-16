@@ -8,7 +8,7 @@ async function main() {
         let contract = network.getContract('hotel');
 
         let r = await contract.evaluateTransaction('hello');
-        await contract.submitTransaction('InitLedger');
+        r = await contract.submitTransaction('InitLedger');
 
         // r = await contract.submitTransaction('Mint', 'alice', '20');
         // r = await contract.submitTransaction('Mint', 'bob', '20');

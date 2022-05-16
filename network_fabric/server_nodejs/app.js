@@ -80,7 +80,11 @@ const auth = expressJwt({secret: 'secret12345'}).unless({
   path: [
     '/order/getall',
     '/favicon.ico',
+
     '/user/register',
+    '/user/userlist',
+    '/user/delete',
+
     '/api/user/register',
     '/order/get',
     '/erc20/tokenlist',

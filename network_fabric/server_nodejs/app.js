@@ -80,16 +80,19 @@ const auth = expressJwt({secret: 'secret12345'}).unless({
   path: [
     '/order/getall',
     '/favicon.ico',
+    '/user/register',
     '/api/user/register',
-    '/order/get'
+    '/order/get',
+    '/erc20/tokenlist',
+    '/erc20/tokeninfo'
   ]
 })
 //   path:['/users','/login', '/api/user/register']})
 app.use(auth)
 
 
-app.use('/api/user', userRouter);
-app.use('/order', orderRouter);
+app.use('/user', userRouter);
+app.use('/order/', orderRouter);
 app.use('/trx', trxRouter);
 app.use('/erc20', erc20Router);
 

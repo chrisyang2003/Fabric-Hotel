@@ -56,18 +56,15 @@ router.get('/register', async (req, res, next) => {
     }
   }, async (err, rep, res) => {
 
+    const network = await fabric.gateway('mychannel')
+    const contract = network.getContract('hotel');
 
-
+    let r = await contract.evaluateTransaction('hello')
+    console.log(r.toString());
+    
 
     console.log(res)
   })
-
-  // const network = await fabric.gateway('mychannel')
-  // const contract = network.getContract('hotel');
-
-  // contract.submitTransaction('')
-
-
 
   playload = {
     user: '123123'

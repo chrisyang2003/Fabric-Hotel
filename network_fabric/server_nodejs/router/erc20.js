@@ -1,12 +1,13 @@
 
 const express = require('express');
 const router = express.Router();
+const fabric = require('../fabric_sdk_node/gateway')
 
 
 
 // erc20
 
-router.get('/erc20/tokeninfo', async (req, res, next) => {
+router.get('/tokeninfo', async (req, res, next) => {
     const network = await fabric.gateway('mychannel')
     const contract = network.getContract('hotel');
 
@@ -17,23 +18,17 @@ router.get('/erc20/tokeninfo', async (req, res, next) => {
     }))
 })
 
-router.get('/erc20/tokenlist', async (req, res, next) => {
+router.get('/tokenlist', async (req, res, next) => {
     const network = await fabric.gateway('mychannel')
     const contract = network.getContract('hotel');
 
     let r = await contract.evaluateTransaction('getTokenList');
     r = JSON.parse(r.toString());
-
-    res.send(r.map(ele => {
-        const key = Object.keys(ele)[0];
-        return {
-            name: key.split(':')[1],
-            balance: ele[key]
-        }
-    }));
+    
+    res.json(r)
 })
 
-router.get('/erc20/balance', async (req, res, next) => {
+router.get('/balance', async (req, res, next) => {
     const network = await fabric.gateway('mychannel')
     const contract = network.getContract('hotel');
 

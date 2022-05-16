@@ -12,13 +12,14 @@ class mycontract extends Contract {
 	async InitLedger(ctx) {
 		await erc20.updateBalance(ctx, 'totalSupply', 0);
 		await erc20.updateBalance(ctx, 'hotelaccount', 0);
-		return;
+		return ctx.stub.getTxID();
 	}
 
 
 	// user contract
 	async reigster (ctx, pk, r, ext, enc_pk){
 		await user.register(ctx, pk, r, ext, enc_pk);
+		return ctx.stub.getTxID();
 	}
 
 	async getAllUser(ctx){
@@ -65,6 +66,7 @@ class mycontract extends Contract {
 
 	async payOrder(ctx, orderno, type, user){
 		await order.payOrder(ctx, orderno, type, user);
+		return ctx.stub.getTxID();
 	}
 
 	// erc20 contract
@@ -85,14 +87,18 @@ class mycontract extends Contract {
 
 	async initUser(ctx, user){
 		await erc20.initUser(ctx, user);
+		return ctx.stub.getTxID();
 	}
 
 	async mint(ctx, user, amount) {
 		await erc20.mint(ctx, user, amount);
+		return ctx.stub.getTxID();
 	}
 
 	async transfer(ctx, from, to, amount) {
 		await erc20.transfer(ctx, from, to, amount);
+		return ctx.stub.getTxID();
+
 	}
 	async getTokenList(ctx) {
 		return await erc20.getAlltokenList(ctx);

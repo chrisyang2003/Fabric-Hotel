@@ -279,12 +279,17 @@ describe('Asset Transfer Events Tests', () => {
 			await assetTransfer.addOrder(transactionContext, '1', 'alice', '100', '{}');
 
 			expect(0).to.eq((await assetTransfer.getUserCount(transactionContext)));
-			await assetTransfer.reigster(transactionContext, '123', '456', '{}');
+			await assetTransfer.reigster(transactionContext, '123', '456', '{}', '123');
 			expect(1).to.eq((await assetTransfer.getUserCount(transactionContext)));
 			let exp = {
 				key: '123',
 				value: {
-					id: 1, pk: '123', r: '456', ext: '{}', lastproof: ''
+					id: 1,
+					pk: '123',
+					r: '456',
+					enc_pk: '123',
+					ext: '{}',
+					lastproof: ''
 				}
 			};
 			expect(JSON.stringify(exp)).to.eq((await assetTransfer.getUser(transactionContext, '123')));

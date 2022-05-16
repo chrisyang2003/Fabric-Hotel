@@ -15,10 +15,10 @@ class mycontract extends Contract {
 		return;
 	}
 
-	
+
 	// user contract
-	async reigster (ctx, pk, r, ext){
-		await user.register(ctx, pk, r, ext);
+	async reigster (ctx, pk, r, ext, enc_pk){
+		await user.register(ctx, pk, r, ext, enc_pk);
 	}
 
 	async getAllUser(ctx){
@@ -42,7 +42,7 @@ class mycontract extends Contract {
 	// 序列号列表
 
 	// 发行量
-	
+
 
 
 

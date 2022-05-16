@@ -6,11 +6,12 @@ function userkey(key){
 	return 'user:' + key;
 }
 
-exports.register = async function(ctx, pk, r, ext){
+exports.register = async function(ctx, pk, r, ext, enc_pk){
 	const user = {
 		id: await this.getUsercount(ctx) + 1,
 		pk: pk,
 		r: r,
+		enc_pk: enc_pk,
 		ext: ext,
 		lastproof: ''
 	};

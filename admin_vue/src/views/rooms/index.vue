@@ -248,11 +248,9 @@ export default {
       console.log(this.hotelForm);
 
       createHouse(this.hotelForm).then((rep) => {
-        this.$notify({
-          title: "Success",
-          message: "Update Successfully",
-          type: "success",
-          duration: 2000,
+        this.$notify.success({
+          title: '消息',
+          message: "成功添加房间",          
         });
       });
 

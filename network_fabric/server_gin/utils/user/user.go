@@ -11,8 +11,7 @@ import (
 	"math/big"
 	"math/rand"
 	"net/http"
-	
-	"server_gin/utils/rsa"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -34,18 +33,15 @@ type ExpCircuit struct {
 func (circuit *ExpCircuit) Define(curveID ecc.ID, api frontend.API) error {
 	//number of bits of exponent
 	const bitSize = 256
-
 	// specify constraints
 	output := api.Constant(1)
 	bits := api.ToBinary(circuit.X, bitSize)
 	multiply := circuit.G
-
 	for i := 0; i < len(bits); i++ {
 		output = api.Select(bits[i], api.Mul(output, multiply), output)
 		multiply = api.Mul(multiply, multiply)
 	}
 	api.AssertIsEqual(circuit.Y, api.Mul(circuit.R, output))
-
 	return nil
 }
 
@@ -135,7 +131,7 @@ func Register(c *gin.Context) {
 	}
 
 	err = groth16.Verify(newproof, vk, publicWitness)
-	
+
 	sk, pk := rsa.GenRsaKey()
 
 	if err != nil {

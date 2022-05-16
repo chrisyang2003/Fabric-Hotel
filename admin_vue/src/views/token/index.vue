@@ -14,12 +14,12 @@
             <el-table :data="list" style="width: 100%; padding-top: 15px">
               <el-table-column label="持有人(前5)" min-width="60">
                 <template slot-scope="{ row }">
-                  {{ row.name }}
+                  {{ row.key }}
                 </template>
               </el-table-column>
               <el-table-column label="余额" width="80" align="center">
                 <template slot-scope="{ row }">
-                  {{ row.balance }}
+                  {{ row.value }}
                 </template>
               </el-table-column>
             </el-table>

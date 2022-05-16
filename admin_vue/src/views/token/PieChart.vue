@@ -44,13 +44,14 @@ export default {
     initChart() {
       this.chart = echarts.init(this.$el, "macarons");
       getTokenList().then((res) => {
+        console.log(res)
         let field = [];
         let piedata = [];
         res.forEach((element) => {
-          field.push(element.name);
+          field.push(element.key);
           piedata.push({
-            name: element.name,
-            value: element.balance,
+            name: element.key,
+            value: element.value,
           });
         });
 

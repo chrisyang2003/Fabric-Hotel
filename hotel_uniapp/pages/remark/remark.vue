@@ -40,8 +40,8 @@ export default {
 						trigger: ['change', 'blur']
 					},
 					{
-						min: 5,
-						message: '评论不能少于5个字',
+						min: 3,
+						message: '评论不能少于3个字',
 						trigger: 'change'
 					}
 				]
@@ -58,8 +58,11 @@ export default {
 						this.$u.toast('参数缺失！');
 						return;
 					}
+
 					this.form.orderid = this.orderid;
 					this.$api.addComment(this.form).then(res=>{
+
+						
 						this.$u.toast(res.msg);
 						if(res.code==1){
 							setTimeout(()=>{

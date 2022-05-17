@@ -19,8 +19,12 @@ exports.updateBalance = async function(ctx, key, amount){
 };
 
 exports.balanceOf = async function(ctx, user){
-	const r = await utils.readState(ctx, tokenkey(user));
-	return parseInt(JSON.parse(r).value);
+	try{
+		const r = await utils.readState(ctx, tokenkey(user));
+		return parseInt(JSON.parse(r).value);
+	}catch (e) {
+		return  0;
+	}
 };
 
 exports.totalSupply = async function(ctx){
@@ -30,8 +34,11 @@ exports.mint = async function(ctx, user, amount){
 	if (typeof amount === 'string'){
 		amount = parseInt(amount);
 	}
+
 	await this.initUser(ctx, user);
-	await this.updateBalance(ctx, user, amount);
+
+	const prebalance = await this.balanceOf(ctx, user);
+	await this.updateBalance(ctx, user, prebalance + amount);
 	await this.updateBalance(ctx, totalSupply, (await this.totalSupply(ctx)) + amount);
 };
 

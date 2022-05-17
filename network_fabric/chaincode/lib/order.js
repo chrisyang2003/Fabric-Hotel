@@ -29,6 +29,8 @@ exports.addOrder = async function(ctx, houseid, user, price, arg){
 		trx: ctx.stub.getTxID(),
 		houseid: houseid,
 		user: user,
+
+
 		price: price,
 		liver: arg,
 		status: '待付款',
@@ -57,4 +59,20 @@ exports.payOrder = async function(ctx, orderno, type, user){
 		await utils.putState(ctx, orderkey(orderno), orderinfo);
 	}
 };
+
+function commentKey(id){
+	return 'comment:' + id;
+}
+exports.addComment = async function(ctx, orderno, grade, comment) {
+	const orderinfo = JSON.parse((await this.getOrder(ctx, orderno))).value;
+	let save = {
+		orderno: orderno,
+		comment : comment,
+		grade: grade,
+	};
+	await utils.putState(ctx, commentKey(orderno), save);
+	orderinfo.status = '已评论';
+	await utils.putState(ctx, orderkey(orderno), orderinfo);
+};
+
 

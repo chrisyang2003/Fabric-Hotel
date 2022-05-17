@@ -33,10 +33,10 @@
 						<u-tag v-if="item.status == 'checkouting'" text="退房中" type="error" shape="circle" />
 					</view>
 				</view>
-				<!-- <view class="house">
-					<fa-swiper :autoplay="false" :list="item.house.images" height="350" :params="{ id: item.id }" @click="clickSwiper"></fa-swiper>
+				<view class="house">
+					<fa-swiper :autoplay="false" :list="[item.house.image]" height="350" :params="{ id: item.id }" @click="clickSwiper"></fa-swiper>
 					<view class="times u-flex u-row-between u-p-20">
-						<view class="">
+						<!-- <view class="">
 							<view class="">{{ item.checkin_time | formatMdTime }}</view>
 							<view class="">{{ item.checkin_time | formatWeek }} {{ item.house.checkin_time | formatTimes }}</view>
 						</view>
@@ -47,27 +47,27 @@
 						<view class="">
 							<view class="">{{ item.leave_time | formatMdTime }}</view>
 							<view class="">{{ item.leave_time | formatWeek }} {{ item.house.checkout_time | formatTimes }}</view>
-						</view>
+						</view> -->
 						<view class=""></view>
 						<view class=""></view>
 						<view class="">
 							<view class="u-font-24">订单总价</view>
-							<view class="text-weight">￥{{ item.amount }}</view>
+							<view class="text-weight">￥{{ item.price }}</view>
 						</view>
 					</view>
-				</view> -->
+				</view>
 				
-				<!-- <view class="bar u-p-t-30 u-flex u-row-between">
-					<view class="">
+				<view class="bar u-p-t-30 u-flex u-row-between">
+					<!-- <view class="">
 						<view class="u-m-l-15" v-if="!item.subscribe">
 							<u-button type="primary" size="mim" @click="subscribeMessage(item.orderid,index)">订阅消息</u-button>
 						</view>
-					</view>
+					</view> -->
 					<view class="u-flex u-row-right u-flex-1">
-						<view class="u-m-l-15" v-if="['created', 'paid', 'toshopay'].indexOf(item.status) != -1">
+						<view class="u-m-l-15" v-if="['待付款', '待入住'].indexOf(item.status) != -1">
 							<u-button type="default" size="mim" @click="cancel(item.id, index)">取消订单</u-button>
 						</view>
-						<view class="u-m-l-15" v-if="item.status == 'created'">
+						<view class="u-m-l-15" v-if="item.status == '待付款'">
 							<u-button
 								type="primary"
 								:custom-style="{ backgroundColor: theme.bgColor, color: theme.color }"
@@ -77,10 +77,10 @@
 								立即支付
 							</u-button>
 						</view>
-						<view class="u-m-l-15" v-if="item.status == 'evaluate'">
-							<u-button type="warning" size="mim" @click="goPage('/pages/remark/remark?orderid=' + item.orderid)">立即评论</u-button>
+						<view class="u-m-l-15" v-if="item.status == '已支付'">
+							<u-button type="warning" size="mim" @click="goPage('/pages/remark/remark?orderid=' + item.orderno)">立即评论</u-button>
 						</view>
-						<view class="u-m-l-15" v-if="['expired', 'canceled', 'refunding', 'evaluate', 'finished', 'toshopay','checkouting','checkined'].indexOf(item.status) != -1">
+						<!-- <view class="u-m-l-15" v-if="['expired', 'canceled', 'refunding', 'evaluate', 'finished', 'toshopay','checkouting','checkined'].indexOf(item.status) != -1">
 							<u-button
 								type="primary"
 								:custom-style="{ backgroundColor: theme.bgColor, color: theme.color }"
@@ -89,9 +89,9 @@
 							>
 								再次预订
 							</u-button>
-						</view>
+						</view> -->
 					</view>
-				</view> -->
+				</view>
 			</view>
 		</view>
 		<u-modal v-model="show" :show-cancel-button="true" content="确定取消订单吗？" @confirm="confirm"></u-modal>
@@ -160,23 +160,6 @@ export default {
 		}
 	},
 	methods: {
-		// #ifdef MP-WEIXIN
-		subscribeMessage(orderid,index) {
-			wx.requestSubscribeMessage({
-				tmplIds: this.vuex_config.tpl_ids,
-				complete: res => {
-					console.log(res);
-					if(res.errMsg == 'requestSubscribeMessage:ok'){
-						this.$api.subscribe({tpl_ids:res,orderid:orderid}).then(res=>{
-							this.$u.toast(res.msg);
-							if(res.code==1){
-								this.$set(this.orderList[index],'subscribe',{id:1})
-							}
-						})
-					}
-				}
-			});
-		},
 		// #endif
 		// 页面数据
 		getOrderList() {
@@ -189,7 +172,8 @@ export default {
 					// this.orderList = [...this.orderList, ...res.data.data];
 					this.orderList = res.data
 					
-					console.log(res)
+					console.log(res.data)
+
 
 					// this.has_more = res.data.current_page < res.data.last_page;
 					// this.is_empty = !this.orderList.length;

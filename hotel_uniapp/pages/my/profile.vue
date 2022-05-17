@@ -8,8 +8,7 @@
 				<u-form-item :label-position="labelPosition" label="头像:" prop="avatar" label-width="150">
 					<u-image width="100" height="100" :src="url || userInfo.avatar" @click="chooseAvatar"></u-image>
 				</u-form-item>
-				<u-form-item label="用户名:" prop="username" label-width="150"><u-input v-model="form.username" /></u-form-item>
-				<u-form-item label="昵称:" prop="nickname" label-width="150"><u-input v-model="form.nickname" /></u-form-item>
+				<u-form-item label="公钥:" prop="nickname" label-width="150"><u-input v-model="form.nickname" /></u-form-item>
 				<u-form-item label="个人介绍:" prop="bio" label-width="150"><u-input v-model="form.bio" type="textarea" /></u-form-item>
 			</u-form>
 			<view class="u-p-30"><u-button type="primary" hover-class="none" :custom-style="{ backgroundColor: theme.bgColor, color: theme.color }" @click="submit">提交</u-button></view>

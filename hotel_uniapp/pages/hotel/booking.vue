@@ -230,13 +230,7 @@ export default {
 				return;
 			}
 
-			console.log(this.lodger_ids);
-			
-			if (this.lodger_ids == 2){
-				this.$u.toast("年龄不符合要求")
-			}
-
-			return
+		
 			this.$api
 				.addOrder({
 					id: this.id,

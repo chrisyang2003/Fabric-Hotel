@@ -9,7 +9,7 @@
 				<!-- 返回token页面 -->
 				<block v-if="vuex_token">
 					<u-avatar size="120" :show-sex="false" :sex-icon="vuex_user.gender == 1 ? 'man' : 'woman'" :src="url || vuex_user.avatar" @click="chooseAvatar"></u-avatar>
-					<view class="u-skeleton-fillet u-m-t-10 u-p-l-80 u-p-r-80 u-line-1">{{ vuex_user.nickname || '' }}</view>
+					<view class="u-skeleton-fillet u-m-t-10 u-p-l-80 u-p-r-80 u-line-1">{{ "用户: " + vuex_user.nickname.slice(0, 10) + '...' || '' }}</view>
 					<view class="u-skeleton-fillet u-m-t-10 u-p-l-80 u-p-r-80 u-line-2">{{ vuex_user.bio || '' }}</view>
 				</block>
 				<block v-else>
@@ -50,7 +50,9 @@
 				<!-- <u-cell-item icon="pushpin-fill" title="每日一签" @click="toSignin"></u-cell-item>				 -->
 				<!-- <u-cell-item icon="heart-fill" title="我的收藏" @click="goPage('/pages/my/collect',true)"></u-cell-item> -->
 				<u-cell-item icon="edit-pen" title="留言板" @click="goPage('/pages/my/feedback',true)"></u-cell-item>
-				<!-- <u-cell-item icon="account-fill" title="个人资料" @click="goPage('/pages/my/profile',true)"></u-cell-item> -->
+				<u-cell-item icon="rmb-circle-fill" title="获取代币" @click="goPage('/pages/my/gettoken',true)"></u-cell-item>
+
+				<u-cell-item icon="account-fill" title="个人资料" @click="goPage('/pages/my/profile',true)"></u-cell-item>
 				<!-- <u-cell-item icon="coupon" title="我的优惠券" @click="goPage('/pages/coupon/user',true)"></u-cell-item> -->
 				<u-cell-item icon="backspace" v-if="vuex_token" title="退出登录" @click="goPage('out')"></u-cell-item>
 			</u-cell-group>

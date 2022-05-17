@@ -111,12 +111,8 @@ describe('Asset Transfer Events Tests', () => {
 			let assetTransfer = new AssetTransfer();
 			await assetTransfer.InitLedger(transactionContext);
 
-			try {
-				expect(0).to.eq((await assetTransfer.balanceOf(transactionContext, 'alice')));
-				assert.fail('should fail');
-			} catch (err) {
-				expect(err.message).to.equal('The asset token:alice does not exist');
-			}
+			expect(0).to.eq((await assetTransfer.balanceOf(transactionContext, 'alice')));
+
 		});
 
 		it('should return success on InitLedger ', async () => {
@@ -134,6 +130,18 @@ describe('Asset Transfer Events Tests', () => {
 
 			expect(10).to.eql((await assetTransfer.balanceOf(transactionContext, 'alice')));
 			expect(10).to.eql((await assetTransfer.totalSupply(transactionContext)));
+
+		});
+
+		it('should return success on mint user alice twice ', async () => {
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+
+			await assetTransfer.mint(transactionContext, 'alice', 10);
+			await assetTransfer.mint(transactionContext, 'alice', 10);
+
+			expect(20).to.eql((await assetTransfer.balanceOf(transactionContext, 'alice')));
+			expect(20).to.eql((await assetTransfer.totalSupply(transactionContext)));
 
 		});
 		it('should return error on transfer alice to bob', async () => {
@@ -197,7 +205,6 @@ describe('Asset Transfer Events Tests', () => {
 				{key: 'bob', value: 5}
 			];
 			let r = await assetTransfer.getTokenList(transactionContext);
-			console.log(r);
 			expect(JSON.stringify(exp)).to.eql(r);
 		});
 	});
@@ -294,6 +301,13 @@ describe('Asset Transfer Events Tests', () => {
 			};
 			expect(JSON.stringify(exp)).to.eq((await assetTransfer.getUser(transactionContext, '123')));
 
+			try{
+				await assetTransfer.deleteUser(transactionContext, '123');
+			}catch (err) {
+				expect(err.message).to.equal('The asset user:123 does not exist');
+			}
+
+
 		});
 	});
 
@@ -312,6 +326,26 @@ describe('Asset Transfer Events Tests', () => {
 			let r = await assetTransfer.getOrder(transactionContext, orderno);
 			r = JSON.parse(r);
 			expect('已支付').to.eq(r.value.status);
+		});
+	});
+
+	describe('Test comment', () => {
+		it('should return success on comment', async () => {
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+			await assetTransfer.mint(transactionContext, 'alice', '200');
+			let orderno = await assetTransfer.addOrder(transactionContext, '1', 'alice', '100', '{}');
+
+
+			await assetTransfer.payOrder(transactionContext, orderno, 'erc20', 'alice');
+			expect(100).to.eql((await assetTransfer.balanceOf(transactionContext, 'alice')));
+			expect(100).to.eql((await assetTransfer.balanceOf(transactionContext, 'hotelaccount')));
+
+			let r = await assetTransfer.getOrder(transactionContext, orderno);
+			await assetTransfer.addComment(transactionContext, orderno, 5, 'nice');
+			r = await assetTransfer.getOrder(transactionContext, orderno);
+			r = JSON.parse(r);
+			expect('已评论').to.eq(r.value.status);
 		});
 	});
 });

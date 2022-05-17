@@ -52,6 +52,13 @@
 				"navigationBarTextStyle": "white"
 			}
 		}, {
+			"path": "pages/my/gettoken",
+			"style": {
+				"navigationBarTitleText": "获取代币",
+				"navigationStyle": "custom",
+				"navigationBarTextStyle": "white"
+			}
+		},{
 			"path": "uview-ui/components/u-avatar-cropper/u-avatar-cropper",
 			"style": {
 				"navigationBarTitleText": "头像裁剪",

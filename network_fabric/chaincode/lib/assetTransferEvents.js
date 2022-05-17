@@ -32,7 +32,12 @@ class mycontract extends Contract {
 
 	async getUser(ctx, pk){
 		return await user.getUser(ctx, pk);
-	}z
+	}
+
+	async deleteUser(ctx, pk){
+		await user.deleteUser(ctx, pk);
+		return ctx.stub.getTxID();
+	}
 
 	// private token
 
@@ -68,6 +73,12 @@ class mycontract extends Contract {
 		await order.payOrder(ctx, orderno, type, user);
 		return ctx.stub.getTxID();
 	}
+
+	async addComment(ctx, orderno, grade, comment){
+		await order.addComment(ctx, orderno, grade, comment);
+		return ctx.stub.getTxID();
+	}
+
 
 	// erc20 contract
 	async tokenName(ctx) {

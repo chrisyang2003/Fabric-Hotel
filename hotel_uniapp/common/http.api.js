@@ -88,7 +88,9 @@ const install = (Vue, vm) => {
 	vm.$api.getCondition		= async (params = {}) => await vm.$u.get('http://chrisyy.top:5000/addons/booking/house/condition', params);
 
 	// 获取用户余额
-	vm.$api.getBalance			= async (params = {}) => await vm.$u.get('http://127.0.0.1:8000/api/my/balance', params);
+	vm.$api.getBalance			= async (params = {}) => await vm.$u.get('http://127.0.0.1:3000/erc20/balance', params);
+	vm.$api.getErc20			= async (params = {}) => await vm.$u.get('http://127.0.0.1:3000/erc20/mint', params);
+
 
 	// 房间列表
 	vm.$api.houseList			= async (params = {}) => await vm.$u.get('http://127.0.0.1:8000/addons/booking/house/houseList', params);
@@ -107,15 +109,20 @@ const install = (Vue, vm) => {
 		// return await vm.$u.get('http://127.0.0.1:7000/addons/booking/order/add', params)
 		return await vm.$u.get('http://127.0.0.1:3000/order/add', params);
 	}
-	vm.$api.orderDetail			= async (params = {}) => await vm.$u.get('http://chrisyy.top:5000/addons/booking/order/detail', params);
+	vm.$api.orderDetail			= async (params = {}) => await vm.$u.get('http://chrisyy.top:3000/order/detail', params);
 
 	vm.$api.orderList			= async (params = {}) => await vm.$u.get('http://127.0.0.1:3000/order/orderList', params);
 
-	vm.$api.orderPay			= async (params = {}) => await vm.$u.post('http://chrisyy.top:5000/addons/booking/order/pay', params);
+	// 支付
+	vm.$api.orderPay			= async (params = {}) => await vm.$u.get('http://chrisyy.top:3000/order/pay', params);
+
 	vm.$api.orderCancel			= async (params = {}) => await vm.$u.post('http://chrisyy.top:5000/addons/booking/order/cancel', params);
 	vm.$api.orderCheckout		= async (params = {}) => await vm.$u.post('http://chrisyy.top:5000/addons/booking/order/orderCheckout', params);
 	vm.$api.commentList			= async (params = {}) => await vm.$u.get('http://chrisyy.top:5000/addons/booking/comment/commentList', params);
-	vm.$api.addComment			= async (params = {}) => await vm.$u.post('http://chrisyy.top:5000/addons/booking/comment/addComment', params);
+
+	// 添加评论
+	vm.$api.addComment			= async (params = {}) => await vm.$u.get('http://chrisyy.top:3000/order/addComment', params);
+
 	vm.$api.optionCollect		= async (params = {}) => await vm.$u.post('http://chrisyy.top:5000/addons/booking/collect/optionCollect', params);
 	vm.$api.collectList	    	= async (params = {}) => await vm.$u.get('http://chrisyy.top:5000/addons/booking/collect/collectList', params);
 	vm.$api.storeList	    	= async (params = {}) => await vm.$u.get('http://chrisyy.top:5000/addons/booking/store/storeList', params);
@@ -142,18 +149,19 @@ const install = (Vue, vm) => {
 	vm.$api.getEmsSend 		  	= async (params = {}) => await vm.$u.post('http://chrisyy.top:5000/addons/booking/ems/send', params);
 	vm.$api.getSmsSend 		  	= async (params = {}) => await vm.$u.post('http://chrisyy.top:5000/addons/booking/sms/send', params);
 
-	// 登陆
-	vm.$api.getUserIndex 	  	= async (params = {}) => await vm.$u.get('http://chrisyy.top:3000/api/user/index', params);
 
 	vm.$api.goLogin 		  	= async (params = {}) => {
 		console.log('login:', params);
 		return await vm.$u.post('http://chrisyy.top:5000/addons/booking/login/login', params)
 	}
+
+
 	vm.$api.mobilelogin 	  	= async (params = {}) => await vm.$u.post('http://chrisyy.top:5000/addons/booking/login/mobilelogin', params);
 
-
+	// 登陆
+	vm.$api.getUserIndex 	  	= async (params = {}) => await vm.$u.get('http://chrisyy.top:3000/user/index', params);
 	// 注册
-	vm.$api.goRegister 		  	= async (params = {}) => await vm.$u.get('http://chrisyy.top:3000/api/user/register', params);
+	vm.$api.goRegister 		  	= async (params = {}) => await vm.$u.get('http://chrisyy.top:3000/user/register', params);
 
 
 

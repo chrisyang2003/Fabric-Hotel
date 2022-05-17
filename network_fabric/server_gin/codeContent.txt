@@ -1,0 +1,508 @@
+====================/utils/user/user.go====================
+package user
+
+import (
+	"bytes"
+	"encoding/base64"
+	"fmt"
+	"github.com/consensys/gnark-crypto/ecc"
+	"github.com/consensys/gnark/backend"
+	"github.com/consensys/gnark/backend/groth16"
+	"github.com/consensys/gnark/frontend"
+	"math/big"
+	"math/rand"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+
+	"server_gin/utils/rsa"
+)
+
+// 全局变量
+var b64pk, b64vk string
+var r1cs frontend.CompiledConstraintSystem
+var vk groth16.VerifyingKey
+var pk groth16.ProvingKey
+var expCircuit ExpCircuit
+
+type ExpCircuit struct {
+	Y frontend.Variable `gnark:",public"`
+	G frontend.Variable `gnark:",public"`
+	R frontend.Variable `gnark:",public"`
+
+	X frontend.Variable
+}
+
+func (circuit *ExpCircuit) Define(curveID ecc.ID, api frontend.API) error {
+	//number of bits of exponent
+	const bitSize = 256
+	// specify constraints
+	output := api.Constant(1)
+	bits := api.ToBinary(circuit.X, bitSize)
+	multiply := circuit.G
+	for i := 0; i < len(bits); i++ {
+		output = api.Select(bits[i], api.Mul(output, multiply), output)
+		multiply = api.Mul(multiply, multiply)
+	}
+	api.AssertIsEqual(circuit.Y, api.Mul(circuit.R, output))
+	return nil
+}
+
+// init
+func init() {
+	fmt.Println("user zkp init ...")
+	var err error
+	r1cs, err = frontend.Compile(ecc.BN254, backend.GROTH16, &expCircuit)
+	if err != nil {
+		fmt.Printf("Compile failed : %v\n", err)
+		return
+	}
+	pk, vk, err = groth16.Setup(r1cs)
+	if err != nil {
+		fmt.Printf("Setup failed\n")
+		return
+	}
+
+	var buf bytes.Buffer
+	pk.WriteTo(&buf)
+	b64pk = base64.StdEncoding.EncodeToString(buf.Bytes())
+	buf.Reset()
+	vk.WriteTo(&buf)
+	b64vk = base64.StdEncoding.EncodeToString(buf.Bytes())
+
+}
+
+func GetParams(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"vk": b64vk,
+		"pk": b64pk,
+	})
+}
+
+func Register(c *gin.Context) {
+	passwd := c.Query("passwd")
+
+	if len(passwd) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"data": "empty passwd",
+		})
+		return
+	}
+
+	g := big.NewInt(3)
+	//
+	x := new(big.Int)
+	y := new(big.Int)
+	p := new(big.Int)
+	r := new(big.Int)
+
+	r.SetUint64(rand.Uint64())
+	x.SetBytes([]byte(passwd))
+
+	p, ok := p.SetString("109441214359196376111232028726286375442741822002080171718491020932879042478085", 10)
+	if !ok {
+		fmt.Println("SetString: error")
+		return
+	}
+	tmp := new(big.Int)
+	tmp.Exp(g, x, p)
+	tmp.Mul(tmp, r)
+	y.Mod(tmp, p)
+
+	witness := &ExpCircuit{
+		Y: frontend.Value(y),
+		G: frontend.Value(g),
+		R: frontend.Value(r),
+		X: frontend.Value(x),
+	}
+	proof, err := groth16.Prove(r1cs, pk, witness)
+	if err != nil {
+		fmt.Printf("Prove failed： %v\n", err)
+		return
+	}
+	var buf bytes.Buffer
+	proof.WriteRawTo(&buf)
+
+	newproof := groth16.NewProof(ecc.BN254)
+	newproof.ReadFrom(&buf)
+	newproof.WriteRawTo(&buf)
+
+	publicWitness := &ExpCircuit{
+		Y: frontend.Value(y),
+		G: frontend.Value(g),
+		R: frontend.Value(r),
+	}
+
+	err = groth16.Verify(newproof, vk, publicWitness)
+
+	sk, pk := rsa.GenRsaKey()
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"data": "verification failed",
+		})
+		return
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"data": gin.H{
+				"userpk": y.String(),
+				"proof":  base64.StdEncoding.EncodeToString(buf.Bytes()),
+				"r":      r.String(),
+				"sk":     string(sk),
+				"pk":     string(pk),
+			},
+		})
+		return
+	}
+
+}
+
+func Login(c *gin.Context) {
+
+	// proof base64
+
+	proof := c.Query("proof")
+	userpk := c.Query("userpk")
+	r := c.Query("r")
+
+	if len(proof) == 0 || len(userpk) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "empty params",
+		})
+		return
+	}
+
+	userpkint := new(big.Int)
+	userpkint.SetString(userpk, 10)
+
+	rand := new(big.Int)
+	rand.SetString(r, 10)
+
+	publicWitness := &ExpCircuit{
+		Y: frontend.Value(userpkint),
+		G: frontend.Value(big.NewInt(3)),
+		R: frontend.Value(rand),
+	}
+
+	userproof := groth16.NewProof(ecc.BN254)
+	proofbytes, _ := base64.StdEncoding.DecodeString(proof)
+	userproof.ReadFrom(bytes.NewBuffer(proofbytes))
+
+	err := groth16.Verify(userproof, vk, publicWitness)
+	if err != nil {
+		fmt.Println("Proof err: ",err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err,
+		})
+		return
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"data": "good",
+		})
+		return
+	}
+}
+
+====================/utils/rsa/rsa.go====================
+package rsa
+
+import (
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/x509"
+	"encoding/hex"
+	"encoding/pem"
+	"errors"
+	"fmt"
+)
+
+func main() {
+	//rsa 密钥文件产生
+	fmt.Println("-------------------------------获取RSA公私钥-----------------------------------------")
+	prvKey, pubKey := GenRsaKey()
+	fmt.Println(string(prvKey))
+	fmt.Println(string(pubKey))
+
+	fmt.Println("-------------------------------进行签名与验证操作-----------------------------------------")
+	var data = "卧了个槽，这么神奇的吗？？！！！  ԅ(¯﹃¯ԅ) ！！！！！！）"
+	fmt.Println("对消息进行签名操作...")
+	signData := RsaSignWithSha256([]byte(data), prvKey)
+	fmt.Println("消息的签名信息： ", hex.EncodeToString(signData))
+	fmt.Println("\n对签名信息进行验证...")
+	if RsaVerySignWithSha256([]byte(data), signData, pubKey) {
+		fmt.Println("签名信息验证成功，确定是正确私钥签名！！")
+	}
+
+	fmt.Println("-------------------------------进行加密解密操作-----------------------------------------")
+	ciphertext := RsaEncrypt([]byte(data), pubKey)
+	fmt.Println("公钥加密后的数据：", hex.EncodeToString(ciphertext))
+	sourceData := RsaDecrypt(ciphertext, prvKey)
+	fmt.Println("私钥解密后的数据：", string(sourceData))
+}
+
+//RSA公钥私钥产生
+func GenRsaKey() (prvkey, pubkey []byte) {
+	// 生成私钥文件
+	privateKey, err := rsa.GenerateKey(rand.Reader, 1024)
+	if err != nil {
+		panic(err)
+	}
+	derStream := x509.MarshalPKCS1PrivateKey(privateKey)
+	block := &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: derStream,
+	}
+	prvkey = pem.EncodeToMemory(block)
+	publicKey := &privateKey.PublicKey
+	derPkix, err := x509.MarshalPKIXPublicKey(publicKey)
+	if err != nil {
+		panic(err)
+	}
+	block = &pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: derPkix,
+	}
+	pubkey = pem.EncodeToMemory(block)
+	return
+}
+
+//签名
+func RsaSignWithSha256(data []byte, keyBytes []byte) []byte {
+	h := sha256.New()
+	h.Write(data)
+	hashed := h.Sum(nil)
+	block, _ := pem.Decode(keyBytes)
+	if block == nil {
+		panic(errors.New("private key error"))
+	}
+	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	if err != nil {
+		fmt.Println("ParsePKCS8PrivateKey err", err)
+		panic(err)
+	}
+
+	signature, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, hashed)
+	if err != nil {
+		fmt.Printf("Error from signing: %s\n", err)
+		panic(err)
+	}
+
+	return signature
+}
+
+//验证
+func RsaVerySignWithSha256(data, signData, keyBytes []byte) bool {
+	block, _ := pem.Decode(keyBytes)
+	if block == nil {
+		panic(errors.New("public key error"))
+	}
+	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		panic(err)
+	}
+
+	hashed := sha256.Sum256(data)
+	err = rsa.VerifyPKCS1v15(pubKey.(*rsa.PublicKey), crypto.SHA256, hashed[:], signData)
+	if err != nil {
+		panic(err)
+	}
+	return true
+}
+
+// 公钥加密
+func RsaEncrypt(data, keyBytes []byte) []byte {
+	//解密pem格式的公钥
+	block, _ := pem.Decode(keyBytes)
+	if block == nil {
+		panic(errors.New("public key error"))
+	}
+	// 解析公钥
+	pubInterface, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		panic(err)
+	}
+	// 类型断言
+	pub := pubInterface.(*rsa.PublicKey)
+	//加密
+	ciphertext, err := rsa.EncryptPKCS1v15(rand.Reader, pub, data)
+	if err != nil {
+		panic(err)
+	}
+	return ciphertext
+}
+
+// 私钥解密
+func RsaDecrypt(ciphertext, keyBytes []byte) []byte {
+	//获取私钥
+	block, _ := pem.Decode(keyBytes)
+	if block == nil {
+		panic(errors.New("private key error!"))
+	}
+	//解析PKCS1格式的私钥
+	priv, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	if err != nil {
+		panic(err)
+	}
+	// 解密
+	data, err := rsa.DecryptPKCS1v15(rand.Reader, priv, ciphertext)
+	if err != nil {
+		panic(err)
+	}
+	return data
+}
+
+====================/utils/compare/compare.go====================
+package compare
+
+====================/test/testexp.go====================
+package main
+
+import (
+	"fmt"
+	"github.com/consensys/gnark-crypto/ecc"
+	"github.com/consensys/gnark/backend"
+	"github.com/consensys/gnark/backend/groth16"
+	"github.com/consensys/gnark/frontend"
+	"math/big"
+)
+
+type ExpCircuit struct {
+	Y frontend.Variable `gnark:",public"`
+	G frontend.Variable `gnark:",public"`
+	R frontend.Variable `gnark:",public"`
+
+	X frontend.Variable
+}
+
+func (circuit *ExpCircuit) Define(curveID ecc.ID, api frontend.API) error {
+	//number of bits of exponent
+	const bitSize = 256
+
+	// specify constraints
+	output := api.Constant(1)
+	bits := api.ToBinary(circuit.X, bitSize)
+	multiply := circuit.G
+
+	for i := 0; i < len(bits); i++ {
+		output = api.Select(bits[i], api.Mul(output, multiply), output)
+		multiply = api.Mul(multiply, multiply)
+	}
+	api.AssertIsEqual(circuit.Y, api.Mul(circuit.R, output))
+
+	return nil
+}
+
+func main() {
+
+	var expCircuit ExpCircuit
+	r1cs, err := frontend.Compile(ecc.BN254, backend.GROTH16, &expCircuit)
+	if err != nil {
+		fmt.Printf("Compile failed : %v\n", err)
+		return
+	}
+	pk, vk, err := groth16.Setup(r1cs)
+	if err != nil {
+		fmt.Printf("Setup failed\n")
+		return
+	}
+
+	g := big.NewInt(3)
+	//
+	x := new(big.Int)
+	y := new(big.Int)
+	r := new(big.Int)
+	p := new(big.Int)
+
+	x.SetString("123123", 10)
+	r.SetString("123123", 10)
+	p, ok := p.SetString("109441214359196376111232028726286375442741822002080171718491020932879042478085", 10)
+	if !ok {
+		fmt.Println("SetString: error")
+		return
+	}
+	tmp := new(big.Int)
+	tmp.Exp(g, x, p)
+	tmp.Mul(tmp, r)
+	y.Mod(tmp, p)
+
+	witness := &ExpCircuit{
+		Y: frontend.Value(y),
+		G: frontend.Value(g),
+		R: frontend.Value(r),
+		X: frontend.Value(x),
+	}
+	proof, err := groth16.Prove(r1cs, pk, witness)
+	if err != nil {
+		fmt.Printf("Prove failed： %v\n", err)
+		return
+	}
+
+	fmt.Println(y);
+
+	publicWitness := &ExpCircuit{
+		Y: frontend.Value(y),
+		G: frontend.Value(g),
+		R: frontend.Value(r),
+	}
+
+	err = groth16.Verify(proof, vk, publicWitness)
+
+	if err == nil {
+		fmt.Println("good proof")
+	} else {
+		fmt.Println("proof error")
+	}
+
+}
+
+====================/test/testuser.py====================
+
+g = 3
+y = 97444002411876298130544283918750258378152496134548429480494475530319735181241
+r = 123123
+x = 123123
+p = 109441214359196376111232028726286375442741822002080171718491020932879042478085
+
+
+test = r * pow(g, x, p) % p
+assert (test == y)
+
+import requests
+import base64
+
+r = requests.get('http://127.0.0.1:7070/user/register?passwd=333').json()['data']
+proof = r['proof']
+userpk = r['userpk']
+r = r['r']
+
+print(proof)
+print(userpk)
+print(r)
+
+r = requests.get('http://127.0.0.1:7070/user/login', params = {
+    "r":r,
+    "proof":proof,
+    "userpk": userpk
+})
+print(r.text)
+
+
+
+====================/router/main.go====================
+package router
+
+import "github.com/gin-gonic/gin"
+import "server_gin/utils/user"
+
+func LoadRouter(e *gin.Engine) {
+	router := e.Group("/user")
+	{
+		router.GET("/params", user.GetParams)
+		router.GET("/register", user.Register)
+		router.GET("/login", user.Login)
+		router.GET("/delete", user.Login)
+	}
+}
+

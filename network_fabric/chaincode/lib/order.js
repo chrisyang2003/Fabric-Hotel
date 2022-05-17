@@ -73,6 +73,12 @@ exports.addComment = async function(ctx, orderno, grade, comment) {
 	await utils.putState(ctx, commentKey(orderno), save);
 	orderinfo.status = '已评论';
 	await utils.putState(ctx, orderkey(orderno), orderinfo);
+
+
+};
+
+exports.getAllComment = async function(ctx) {
+	return await utils.getALlStatus(ctx, 'comment');
 };
 
 

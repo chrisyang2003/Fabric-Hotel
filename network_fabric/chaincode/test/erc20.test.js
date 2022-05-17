@@ -346,6 +346,9 @@ describe('Asset Transfer Events Tests', () => {
 			r = await assetTransfer.getOrder(transactionContext, orderno);
 			r = JSON.parse(r);
 			expect('已评论').to.eq(r.value.status);
+
+			r = await assetTransfer.getAllComment(transactionContext);
+			console.log(r);
 		});
 	});
 });

@@ -79,6 +79,10 @@ class mycontract extends Contract {
 		return ctx.stub.getTxID();
 	}
 
+	async getAllComment(ctx){
+		return await order.getAllComment(ctx);
+	}
+
 
 	// erc20 contract
 	async tokenName(ctx) {

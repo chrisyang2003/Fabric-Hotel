@@ -80,7 +80,7 @@
 						<view class="u-m-l-15" v-if="item.status == '已支付'">
 							<u-button type="warning" size="mim" @click="goPage('/pages/remark/remark?orderid=' + item.orderno)">立即评论</u-button>
 						</view>
-						<!-- <view class="u-m-l-15" v-if="['expired', 'canceled', 'refunding', 'evaluate', 'finished', 'toshopay','checkouting','checkined'].indexOf(item.status) != -1">
+						<view class="u-m-l-15" v-if="['expired', 'canceled', 'refunding', 'evaluate', '已评论', 'toshopay','checkouting','checkined'].indexOf(item.status) != -1">
 							<u-button
 								type="primary"
 								:custom-style="{ backgroundColor: theme.bgColor, color: theme.color }"
@@ -89,7 +89,7 @@
 							>
 								再次预订
 							</u-button>
-						</view> -->
+						</view>
 					</view>
 				</view>
 			</view>

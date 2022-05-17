@@ -151,8 +151,7 @@ const install = (Vue, vm) => {
 
 
 	vm.$api.goLogin 		  	= async (params = {}) => {
-		console.log('login:', params);
-		return await vm.$u.post('http://chrisyy.top:5000/addons/booking/login/login', params)
+		return await vm.$u.get('http://chrisyy.top:3000/user/login', params)
 	}
 
 

@@ -50,10 +50,11 @@ export const constantRoutes = [
     children: [
       {
         path: 'hotelinfo',
-        component: () => import('@/views/dashboard/index'),
+        component: () => import('@/views/hotel/index'),
         name: 'hotelinfo',
         meta: { title: '酒店信息', icon: 'dashboard', affix: true },
       }
+      
     ]
   },
 

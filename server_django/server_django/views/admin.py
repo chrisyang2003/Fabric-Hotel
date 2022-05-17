@@ -2,13 +2,65 @@ from django.http import JsonResponse
 import requests 
 from model.house import house
 
+from django.shortcuts import render, redirect
+from django.contrib.auth import authenticate, logout
+from django.contrib.auth import login as Login
+
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
+
+class RegisterForm(UserCreationForm):
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = ("username", "email")
+
+def login(request):
+    msg = {
+        'color': 'transparent',
+    }
+    if request.POST:
+        username = request.POST['username']
+        password = request.POST['password']
+        user = authenticate(username=username, password=password)
+        if user is None:
+            msg['error'] = "用户名或密码错误！"
+        else:
+            Login(request, user)
+            return redirect("/index")
+    return render(request, "login.html", msg)
 
 
+def register(request):
+    if request.method == 'POST':
+
+        form = RegisterForm(request.POST)
+
+        if form.is_valid():
+            form.save()
+            return redirect('/login/')
+    else:
+        form = RegisterForm()
+
+    return render(request, 'register.html', context={'form': form})
+
+
+def login_out(request):
+    logout(request)  
+    return redirect("/index")  
 
 
 def login(request):
-    _json = {"code":20000,"data":{"token":"admin-token"}}
-    return JsonResponse(_json)
+
+    _json = {"code":20000,"data":{"token":"1"}}
+    return JsonResponse({
+        'data':2
+    })
+
+def logout(_):
+
+    _json = {"code":20000,"data":{"token":"1"}}
+    return JsonResponse('1')
+
 
 
 def info(_):

@@ -5,6 +5,7 @@ const { Contract } = require('fabric-contract-api');
 const erc20 = require('./erc20');
 const order = require('./order');
 const user = require('./user');
+const privacy = require('./privacy');
 
 class mycontract extends Contract {
 
@@ -41,6 +42,8 @@ class mycontract extends Contract {
 
 	// private token
 
+	async commitCount(ctx){
+	}
 	// 承诺总数
 
 	// 已经公开序列号总数

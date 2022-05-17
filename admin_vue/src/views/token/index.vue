@@ -40,11 +40,11 @@
           <el-card class="card">
             <div slot="header">
               <h2>隐私代币</h2>
-              <span>{{ "链上承诺总数: " + this.info.tokenName }}</span>
+              <span>{{ "链上承诺总数: " + 0 }}</span>
               <el-divider direction="vertical"></el-divider>
-              <span>{{ "已公开序列号总数: " + this.info.Symbol }}</span>
+              <span>{{ "已公开序列号总数: " + 0 }}</span>
               <el-divider direction="vertical"></el-divider>
-              <span>{{ "代币发行总量: " + this.info.totalSupply }}</span>
+              <span>{{ "代币发行总量: " + 0 }}</span>
             </div>
             <el-table :data="list" style="width: 100%; padding-top: 15px">
               <el-table-column label="最近序列号" min-width="60">
@@ -59,7 +59,7 @@
         <el-col :span="12">
           <el-card class="card">
             <div class="chart-wrapper">
-              <pie-chart/>
+              <pie-chart2/>
             </div>
           </el-card>
         </el-col>
@@ -71,10 +71,13 @@
 // import { getAllorder, getOrderDetailById} from "@/api/order";
 import { getTokenList, getTokenInfo } from "@/api/token";
 import PieChart from "./PieChart";
+import PieChart2 from "./PieChart2";
+
 
 export default {
   components: {
     // GithubCorner,
+    PieChart2,
     PieChart,
   },
   data() {

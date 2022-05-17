@@ -58,7 +58,8 @@
 <script>
 import CountTo from 'vue-count-to'
 import { init } from '@/api/init'
-
+import {getAllorder, getAllComment} from '@/api/order'
+import {querybalance} from '@/api/token'
 
 export default {
   data(){
@@ -77,11 +78,14 @@ export default {
       this.$emit('handleSetLineChartData', type)
     }
   },
-  created() {
+  async created() {
+    this.ordercount = parseInt((await getAllorder()).length)
+    this.message = parseInt((await getAllComment()).data.length)
+    this.purchases = parseInt((await querybalance()).balance)
     init().then(response => {
-      this.ordercount = response.data.ordercount
-      this.message = response.data.message
-      this.purchases = response.data.purchases
+    //   this.ordercount = (await getAllorder()).length
+    //   this.message = response.data.message
+    //   this.purchases = response.data.purchases
       this.hotels = response.data.hotels
     })
   },

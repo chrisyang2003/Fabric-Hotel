@@ -15,12 +15,12 @@ const { BlockDecoder } = require('fabric-common')
 
 
 router.get('/index', (req, res, next) => {
-  console.log(req.user.user)
+  const user = req.user.user
 
   let r = {
     code: 1,
     data: {
-      token: "5c163acd-c698-4d8c-a319-b7beea98a97e",
+      token: "",
       user: {
         avatar: "http://chrisyy.top:5000/uploads/20220405/0af8bc83d3a810dae33ba7ad6a3fb135.jpeg",
         bio: "A hotel on HyperledgerFabric",
@@ -32,7 +32,7 @@ router.get('/index', (req, res, next) => {
         level: 0,
         mobile: "13888888888",
         money: "0.00",
-        nickname: "admin",
+        nickname: user,
         score: 0,
         token: "5c163acd-c698-4d8c-a319-b7beea98a97e",
         user_id: 1,
@@ -54,11 +54,26 @@ router.get('/delete', async (req, res, next) => {
   const network = await fabric.gateway('mychannel')
   const contract = network.getContract('hotel');
 
-  let r = contract.submitTransaction('')
+  let r = contract.submitTransaction('deleteUser', user)
+
 
   console.log(user);
   
 })
+
+router.get('/login', async (req, res, next) => {
+  const user = req.query.userpk
+
+  res.json({
+    data: { 
+      token: jwt.sign({
+        user: user
+      }, key, { expiresIn: '1day' }),
+      user: user
+    }
+  })
+})
+
 
 router.get('/register', async (req, res, next) => {
   let a = res

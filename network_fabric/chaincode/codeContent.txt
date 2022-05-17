@@ -1,0 +1,778 @@
+====================/lib/user.js====================
+// eslint-disable-next-line strict
+const utils = require('./utils');
+const {readState} = require('./utils');
+
+function userkey(key){
+	return 'user:' + key;
+}
+
+exports.register = async function(ctx, pk, r, ext, enc_pk){
+	const user = {
+		id: await this.getUsercount(ctx) + 1,
+		pk: pk,
+		r: r,
+		enc_pk: enc_pk,
+		ext: ext,
+		lastproof: ''
+	};
+	await utils.putState(ctx, userkey(pk), user);
+};
+
+exports.getUser = async function(ctx, pk){
+	return await readState(ctx, userkey(pk));
+};
+
+exports.login = async function(ctx, pk, r, ext){
+
+};
+
+exports.deleteUser = async function(ctx, pk){
+	await utils.deleteAsset(ctx, userkey(pk));
+};
+exports.updateUser = async function(ctx, pk, r, ext){
+
+};
+
+exports.getUsercount = async function(ctx){
+	const r = await this.getALlUser(ctx);
+	return JSON.parse(r).length;
+};
+
+exports.getALlUser = async function(ctx){
+	const r = await utils.getALlStatus(ctx, 'user');
+	return r;
+};
+====================/lib/utils.js====================
+// eslint-disable-next-line strict
+exports.Exists = async function(ctx, id) {
+	const assetBuffer = await ctx.stub.getState(id);
+	return assetBuffer && assetBuffer.length > 0;
+};
+
+exports.readState = async function (ctx, id) {
+	const assetBuffer = await ctx.stub.getState(id);
+	if (!assetBuffer || assetBuffer.length === 0) {
+		throw new Error(`The asset ${id} does not exist`);
+	}
+	return assetBuffer.toString();
+};
+
+exports.putState = async function (ctx, id, content) {
+	let r = await ctx.stub.putState(id, Buffer.from(JSON.stringify({
+		key: id.split(':')[1],
+		value: content
+	})));
+	return r;
+};
+
+exports.deleteAsset = async function (ctx, id) {
+	const exists = await this.Exists(ctx, id);
+	if (!exists) {
+		throw new Error(`The asset ${id} does not exist`);
+	}
+	return ctx.stub.deleteState(id);
+};
+
+exports.getALlStatus = async function(ctx, prefix){
+	if (!prefix){
+		throw new Error('no prefix');
+	}
+	const allResults = [];
+	const iterator = await ctx.stub.getStateByRange('', '');
+	let result = await iterator.next();
+	while (!result.done) {
+		const key = result.value.key.toString();
+		const keysplit = key.split(':');
+		const strValue = Buffer.from(result.value.value.toString()).toString('utf8');
+		let record;
+		try {
+			record = JSON.parse(strValue);
+		} catch (err) {
+			console.log(err);
+			record = strValue;
+		}
+
+		if(keysplit[0] === prefix){
+			allResults.push(record);
+		}
+		result = await iterator.next();
+	}
+	return JSON.stringify(allResults);
+};
+
+
+
+
+====================/lib/erc20.js====================
+// eslint-disable-next-line strict
+const utils = require('./utils');
+
+const totalSupply = 'totalSupply';
+
+function tokenkey(id){
+	return 'token:' + id;
+}
+
+
+exports.initUser = async function(ctx, user) {
+	if (!(await utils.Exists(ctx, tokenkey(user)))) {
+		await this.updateBalance(ctx, user, 0);
+	}
+};
+
+exports.updateBalance = async function(ctx, key, amount){
+	await utils.putState(ctx, tokenkey(key), amount);
+};
+
+exports.balanceOf = async function(ctx, user){
+	try{
+		const r = await utils.readState(ctx, tokenkey(user));
+		return parseInt(JSON.parse(r).value);
+	}catch (e) {
+		return  0;
+	}
+};
+
+exports.totalSupply = async function(ctx){
+	return this.balanceOf(ctx,totalSupply);
+};
+exports.mint = async function(ctx, user, amount){
+	if (typeof amount === 'string'){
+		amount = parseInt(amount);
+	}
+
+	await this.initUser(ctx, user);
+
+	const prebalance = await this.balanceOf(ctx, user);
+	await this.updateBalance(ctx, user, prebalance + amount);
+	await this.updateBalance(ctx, totalSupply, (await this.totalSupply(ctx)) + amount);
+};
+
+exports.transfer = async function(ctx, from, to, amount){
+	if (amount < 0){
+		throw new Error('amount < 0');
+	}
+	await this.initUser(ctx, from);
+	await this.initUser(ctx, to);
+
+	if (typeof amount === 'string'){
+		amount = parseInt(amount);
+	}
+
+	let fromBalance = await this.balanceOf(ctx, from);
+	if (fromBalance < amount) {
+		throw new Error(`User ${from} does not have enough token`);
+	}
+
+	const newFrom = await this.balanceOf(ctx, from) - amount;
+	const newTo = await this.balanceOf(ctx, to) + amount;
+
+	await this.updateBalance(ctx, from, newFrom);
+	await this.updateBalance(ctx, to, newTo);
+};
+
+exports.getAlltokenList = async function(ctx){
+	let r = await utils.getALlStatus(ctx, 'token');
+	r = JSON.parse(r);
+	let res = [];
+
+	r.forEach(ele => {
+		if (ele.key !== totalSupply){
+			res.push(ele);
+		}
+	});
+
+	return JSON.stringify(res);
+};
+====================/lib/assetTransferEvents.js====================
+/* eslint-disable quote-props */
+'use strict';
+
+const { Contract } = require('fabric-contract-api');
+const erc20 = require('./erc20');
+const order = require('./order');
+const user = require('./user');
+
+class mycontract extends Contract {
+
+	// init
+	async InitLedger(ctx) {
+		await erc20.updateBalance(ctx, 'totalSupply', 0);
+		await erc20.updateBalance(ctx, 'hotelaccount', 0);
+		return ctx.stub.getTxID();
+	}
+
+
+	// user contract
+	async reigster (ctx, pk, r, ext, enc_pk){
+		await user.register(ctx, pk, r, ext, enc_pk);
+		return ctx.stub.getTxID();
+	}
+
+	async getAllUser(ctx){
+		return await user.getALlUser(ctx);
+	}
+
+	async getUserCount(ctx){
+		return await user.getUsercount(ctx);
+	}
+
+	async getUser(ctx, pk){
+		return await user.getUser(ctx, pk);
+	}
+
+	async deleteUser(ctx, pk){
+		await user.deleteUser(ctx, pk);
+		return ctx.stub.getTxID();
+	}
+
+	// private token
+
+	// 承诺总数
+
+	// 已经公开序列号总数
+
+	// 序列号列表
+
+	// 发行量
+
+
+
+
+	// order contract
+	async addOrder(ctx, houseid, user, price, arg) {
+		return await order.addOrder(ctx, houseid, user, price, arg);
+	}
+
+	async getOrder(ctx, id) {
+		return await order.getOrder(ctx, id);
+	}
+
+	async deleteOrder(ctx, id) {
+		return await order.deleteOrder(ctx, id);
+	}
+
+	async getAllorder(ctx) {
+		return await order.getAllorder(ctx);
+	}
+
+	async payOrder(ctx, orderno, type, user){
+		await order.payOrder(ctx, orderno, type, user);
+		return ctx.stub.getTxID();
+	}
+
+	async addComment(ctx, orderno, grade, comment){
+		await order.addComment(ctx, orderno, grade, comment);
+		return ctx.stub.getTxID();
+	}
+
+	async getAllComment(ctx){
+		return await order.getAllComment(ctx);
+	}
+
+
+	// erc20 contract
+	async tokenName(ctx) {
+		return 'HotelToken';
+	}
+	async Symbol(ctx) {
+		return 'HTN';
+	}
+
+	async totalSupply(ctx) {
+		return await erc20.totalSupply(ctx);
+	}
+
+	async balanceOf(ctx, user) {
+		return  await erc20.balanceOf(ctx, user);
+	}
+
+	async initUser(ctx, user){
+		await erc20.initUser(ctx, user);
+		return ctx.stub.getTxID();
+	}
+
+	async mint(ctx, user, amount) {
+		await erc20.mint(ctx, user, amount);
+		return ctx.stub.getTxID();
+	}
+
+	async transfer(ctx, from, to, amount) {
+		await erc20.transfer(ctx, from, to, amount);
+		return ctx.stub.getTxID();
+
+	}
+	async getTokenList(ctx) {
+		return await erc20.getAlltokenList(ctx);
+	}
+
+	// test
+	async hello(ctx){
+		return 'Hello world';
+	}
+
+	async test(ctx, arg){
+		return {
+			'返回交易提案中指定的交易ID':ctx.stub.getTxID(),
+			'返回交易提案中指定的通道ID':ctx.stub.getChannelID(),
+			'交易创建的时间戳': ctx.stub.getDateTimestamp(),
+			'typeof 时间戳': typeof ctx.stub.getDateTimestamp(),
+			'返回交易的绑定信息，如一些临时信息，以避免重复性攻击':ctx.stub.getBinding(),
+			'getTransient()':ctx.stub.getTransient(),
+			'getArgs': ctx.stub.getArgs(),
+			'typeof getArgs': typeof ctx.stub.getArgs(),
+			'arg': arg,
+			'typeof arg': typeof arg,
+			// "返回与交易提案相关的签名身份信息":ctx.stub.getSignedProposal(),
+			// "返回该交易提交者的身份信息":ctx.stub.getCreator(),
+		};
+	}
+
+
+}
+
+module.exports = mycontract;
+
+====================/lib/order.js====================
+// eslint-disable-next-line strict
+const utils = require('./utils');
+const erc20 = require('./erc20');
+
+
+function orderkey(key){
+	return 'order:' + key;
+}
+
+
+function getOrderno(_date) {
+	const date = _date;
+	let Y = date.getFullYear();
+	let M = (date.getMonth() + 1 < 10 ? '0' + (date.getMonth() + 1) : date.getMonth() + 1);
+	let D = (date.getDate() < 10 ? '0' + (date.getDate()) : date.getDate());
+	let h = (date.getHours() < 10 ? '0' + date.getHours() : date.getHours());
+	let m = (date.getMinutes() < 10 ? '0' + date.getMinutes() : date.getMinutes());
+	let s = (date.getSeconds() < 10 ? '0' + date.getSeconds() : date.getSeconds());
+	return Y + M + D + h + m + s;
+}
+
+exports.addOrder = async function(ctx, houseid, user, price, arg){
+	const time = ctx.stub.getDateTimestamp();
+	const orderno = getOrderno(time);
+
+	const order = {
+		orderno: orderno,
+		timestamp: parseInt(time.getTime() / 1000),
+		trx: ctx.stub.getTxID(),
+		houseid: houseid,
+		user: user,
+
+
+		price: price,
+		liver: arg,
+		status: '待付款',
+	};
+	await utils.putState(ctx, orderkey(orderno), order);
+	return orderno;
+};
+
+exports.getOrder = async function(ctx, id){
+	return await utils.readState(ctx, orderkey(id));
+};
+exports.deleteOrder = async function(ctx, id){
+	await utils.deleteAsset(ctx, orderkey(id));
+};
+exports.getAllorder = async function(ctx){
+	return await utils.getALlStatus(ctx, 'order');
+};
+
+exports.payOrder = async function(ctx, orderno, type, user){
+	const orderinfo = JSON.parse((await this.getOrder(ctx, orderno))).value;
+	const price = orderinfo.price;
+
+	if (type === 'erc20'){
+		await erc20.transfer(ctx, user, 'hotelaccount', price);
+		orderinfo.status = '已支付';
+		await utils.putState(ctx, orderkey(orderno), orderinfo);
+	}
+};
+
+function commentKey(id){
+	return 'comment:' + id;
+}
+exports.addComment = async function(ctx, orderno, grade, comment) {
+	const orderinfo = JSON.parse((await this.getOrder(ctx, orderno))).value;
+	let save = {
+		orderno: orderno,
+		comment : comment,
+		grade: grade,
+	};
+	await utils.putState(ctx, commentKey(orderno), save);
+	orderinfo.status = '已评论';
+	await utils.putState(ctx, orderkey(orderno), orderinfo);
+
+
+};
+
+exports.getAllComment = async function(ctx) {
+	return await utils.getALlStatus(ctx, 'comment');
+};
+
+
+
+====================/test/erc20.test.js====================
+'use strict';
+const sinon = require('sinon');
+const chai = require('chai');
+const sinonChai = require('sinon-chai');
+const expect = chai.expect;
+
+const {Context} = require('fabric-contract-api');
+const {ChaincodeStub, ClientIdentity} = require('fabric-shim');
+
+const AssetTransfer = require('../lib/assetTransferEvents.js');
+
+let assert = sinon.assert;
+chai.use(sinonChai);
+
+function getOrderno(_date) {
+	const date = _date;
+	let Y = date.getFullYear();
+	let M = (date.getMonth() + 1 < 10 ? '0' + (date.getMonth() + 1) : date.getMonth() + 1);
+	let D = (date.getDate() < 10 ? '0' + (date.getDate()) : date.getDate());
+	let h = (date.getHours() < 10 ? '0' + date.getHours() : date.getHours());
+	let m = (date.getMinutes() < 10 ? '0' + date.getMinutes() : date.getMinutes());
+	let s = (date.getSeconds() < 10 ? '0' + date.getSeconds() : date.getSeconds());
+	return Y + M + D + h + m + s;
+}
+
+let sleep = function (time) {
+	return new Promise((resolve) => {
+		setTimeout(resolve, time);
+	});
+};
+
+describe('Asset Transfer Events Tests', () => {
+	let transactionContext, chaincodeStub, clientIdentity;
+
+	beforeEach(() => {
+		transactionContext = new Context();
+
+		chaincodeStub = sinon.createStubInstance(ChaincodeStub);
+		chaincodeStub.getMspID.returns('org1');
+		transactionContext.setChaincodeStub(chaincodeStub);
+
+		clientIdentity = sinon.createStubInstance(ClientIdentity);
+		clientIdentity.getMSPID.returns('org1');
+		transactionContext.clientIdentity = clientIdentity;
+
+		chaincodeStub.putState.callsFake((key, value) => {
+			if (!chaincodeStub.states) {
+				chaincodeStub.states = {};
+			}
+			chaincodeStub.states[key] = value;
+		});
+
+		chaincodeStub.getState.callsFake(async (key) => {
+			let ret;
+			if (chaincodeStub.states) {
+				ret = chaincodeStub.states[key];
+			}
+			return Promise.resolve(ret);
+		});
+
+		chaincodeStub.deleteState.callsFake(async (key) => {
+			if (chaincodeStub.states) {
+				delete chaincodeStub.states[key];
+			}
+			return Promise.resolve(key);
+		});
+
+
+		// getDateTimestamp mock
+		chaincodeStub.getDateTimestamp.callsFake(() => {
+			return new Date();
+		});
+
+		// trx mock
+		chaincodeStub.getTxID.callsFake(() => {
+			return '8ab8f29eda6985326159b4968ddf7daf1cafe4116fc0be3341dad98848f79d2b';
+		});
+
+		chaincodeStub.getStateByRange.callsFake(async () => {
+			function* internalGetStateByRange() {
+				if (chaincodeStub.states) {
+					// Shallow copy
+					const copied = Object.assign({}, chaincodeStub.states);
+
+					for (let key in copied) {
+						yield {key: key, value: copied[key]};
+					}
+				}
+			}
+
+			return Promise.resolve(internalGetStateByRange());
+		});
+
+
+	});
+	describe('Test erc20', () => {
+		it('should return success on info ', async () => {
+			let assetTransfer = new AssetTransfer();
+			expect('HotelToken').to.eql((await assetTransfer.tokenName(transactionContext)));
+			expect('HTN').to.eql((await assetTransfer.Symbol(transactionContext)));
+		});
+
+		it('should return success on InitLedger ', async () => {
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+			expect(0).to.eq((await assetTransfer.balanceOf(transactionContext, 'totalSupply')));
+			expect(0).to.eql(await assetTransfer.totalSupply(transactionContext));
+		});
+
+		it('should return error on InitLedger ', async () => {
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+
+			expect(0).to.eq((await assetTransfer.balanceOf(transactionContext, 'alice')));
+
+		});
+
+		it('should return success on InitLedger ', async () => {
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+			await assetTransfer.initUser(transactionContext, 'alice');
+			expect(0).to.eq((await assetTransfer.balanceOf(transactionContext, 'alice')));
+		});
+
+		it('should return success on mint user alice ', async () => {
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+
+			await assetTransfer.mint(transactionContext, 'alice', 10);
+
+			expect(10).to.eql((await assetTransfer.balanceOf(transactionContext, 'alice')));
+			expect(10).to.eql((await assetTransfer.totalSupply(transactionContext)));
+
+		});
+
+		it('should return success on mint user alice twice ', async () => {
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+
+			await assetTransfer.mint(transactionContext, 'alice', 10);
+			await assetTransfer.mint(transactionContext, 'alice', 10);
+
+			expect(20).to.eql((await assetTransfer.balanceOf(transactionContext, 'alice')));
+			expect(20).to.eql((await assetTransfer.totalSupply(transactionContext)));
+
+		});
+		it('should return error on transfer alice to bob', async () => {
+
+			// chaincodeStub.putState.rejects('User alice does not have enough token');
+
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+
+			await assetTransfer.mint(transactionContext, 'alice', '10');
+
+			expect(10).to.eql((await assetTransfer.balanceOf(transactionContext, 'alice')));
+			expect(10).to.eql((await assetTransfer.totalSupply(transactionContext)));
+
+			try {
+				await assetTransfer.transfer(transactionContext, 'alice', 'bob', 11);
+				assert.fail('transfer should have failed');
+			} catch (err) {
+				expect(err.message).to.equal('User alice does not have enough token');
+			}
+		});
+
+		it('should return success on transfer alice to bob', async () => {
+
+			// chaincodeStub.putState.rejects('User alice does not have enough token');
+
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+
+			await assetTransfer.mint(transactionContext, 'alice', '10');
+
+			expect(10).to.eql((await assetTransfer.balanceOf(transactionContext, 'alice')));
+			expect(10).to.eql((await assetTransfer.totalSupply(transactionContext)));
+
+			await assetTransfer.transfer(transactionContext, 'alice', 'bob', '5');
+
+			expect(5).to.eql((await assetTransfer.balanceOf(transactionContext, 'alice')));
+			expect(5).to.eql((await assetTransfer.balanceOf(transactionContext, 'bob')));
+		});
+
+		it('should return success on tow user', async () => {
+
+			// chaincodeStub.putState.rejects('User alice does not have enough token');
+
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+
+			await assetTransfer.mint(transactionContext, 'alice', '10');
+
+			expect(10).to.eql((await assetTransfer.balanceOf(transactionContext, 'alice')));
+			expect(10).to.eql((await assetTransfer.totalSupply(transactionContext)));
+
+			await assetTransfer.transfer(transactionContext, 'alice', 'bob', '5');
+
+			expect(5).to.eql((await assetTransfer.balanceOf(transactionContext, 'alice')));
+			expect(5).to.eql((await assetTransfer.balanceOf(transactionContext, 'bob')));
+
+			let exp = [
+				{key: 'hotelaccount', value: 0},
+				{key: 'alice', value: 5},
+				{key: 'bob', value: 5}
+			];
+			let r = await assetTransfer.getTokenList(transactionContext);
+			expect(JSON.stringify(exp)).to.eql(r);
+		});
+	});
+	describe('Test order', () => {
+
+		it('should return success on addorder', async () => {
+			let assetTransfer = new AssetTransfer();
+			let orderno = await assetTransfer.addOrder(transactionContext, '1', 'alice', '100', '{}');
+			let exp = {
+				key: orderno,
+				value: {
+					orderno: getOrderno(new Date()),
+					timestamp: parseInt(new Date().getTime() / 1000),
+					trx: '8ab8f29eda6985326159b4968ddf7daf1cafe4116fc0be3341dad98848f79d2b',
+					houseid: '1',
+					user: 'alice',
+					price: '100',
+					liver: '{}',
+					status: '待付款'
+				}
+			};
+			expect(JSON.stringify(exp)).to.eq((await assetTransfer.getOrder(transactionContext, orderno)));
+		});
+
+		it('should return success on deleteorder', async () => {
+			let assetTransfer = new AssetTransfer();
+			const time = new Date();
+			let orderno = getOrderno(time);
+
+			try {
+				await assetTransfer.getOrder(transactionContext, orderno);
+				assert.fail('fail');
+			} catch (err) {
+				expect(err.message).to.equal(`The asset order:${orderno} does not exist`);
+			}
+
+			orderno = await assetTransfer.addOrder(transactionContext, '1', 'alice', '100', '{}');
+			let exp = {
+				key: orderno,
+				value: {
+					orderno: orderno,
+					timestamp: parseInt(time.getTime() / 1000),
+					trx: '8ab8f29eda6985326159b4968ddf7daf1cafe4116fc0be3341dad98848f79d2b',
+					houseid: '1',
+					user: 'alice',
+					price: '100',
+					liver: '{}',
+					status: '待付款'
+				}
+			};
+			expect(JSON.stringify(exp)).to.eq((await assetTransfer.getOrder(transactionContext, orderno)));
+
+			await assetTransfer.deleteOrder(transactionContext, orderno);
+			try {
+				await assetTransfer.getOrder(transactionContext, orderno);
+				assert.fail('fail');
+			} catch (err) {
+				expect(err.message).to.equal(`The asset order:${orderno} does not exist`);
+			}
+			// expect(JSON.stringify(exp)).to.eq(());
+		});
+
+
+		it('should return success on getAllOrder', async () => {
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.addOrder(transactionContext, '1', 'alice', '100', '{}');
+			// await sleep(1000);
+			// await assetTransfer.addOrder(transactionContext, '1', 'alice', '100', '{}');
+			await assetTransfer.getAllorder(transactionContext);
+		});
+
+	});
+
+	describe('Test user', () => {
+		it('should return success on addUser', async () => {
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+			await assetTransfer.mint(transactionContext, 'alice', '10');
+			await assetTransfer.addOrder(transactionContext, '1', 'alice', '100', '{}');
+
+			expect(0).to.eq((await assetTransfer.getUserCount(transactionContext)));
+			await assetTransfer.reigster(transactionContext, '123', '456', '{}', '123');
+			expect(1).to.eq((await assetTransfer.getUserCount(transactionContext)));
+			let exp = {
+				key: '123',
+				value: {
+					id: 1,
+					pk: '123',
+					r: '456',
+					enc_pk: '123',
+					ext: '{}',
+					lastproof: ''
+				}
+			};
+			expect(JSON.stringify(exp)).to.eq((await assetTransfer.getUser(transactionContext, '123')));
+
+			try{
+				await assetTransfer.deleteUser(transactionContext, '123');
+			}catch (err) {
+				expect(err.message).to.equal('The asset user:123 does not exist');
+			}
+
+
+		});
+	});
+
+	describe('Test payorder', () => {
+		it('should return success on payorder', async () => {
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+			await assetTransfer.mint(transactionContext, 'alice', '200');
+			let orderno = await assetTransfer.addOrder(transactionContext, '1', 'alice', '100', '{}');
+
+
+			await assetTransfer.payOrder(transactionContext, orderno, 'erc20', 'alice');
+			expect(100).to.eql((await assetTransfer.balanceOf(transactionContext, 'alice')));
+			expect(100).to.eql((await assetTransfer.balanceOf(transactionContext, 'hotelaccount')));
+
+			let r = await assetTransfer.getOrder(transactionContext, orderno);
+			r = JSON.parse(r);
+			expect('已支付').to.eq(r.value.status);
+		});
+	});
+
+	describe('Test comment', () => {
+		it('should return success on comment', async () => {
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+			await assetTransfer.mint(transactionContext, 'alice', '200');
+			let orderno = await assetTransfer.addOrder(transactionContext, '1', 'alice', '100', '{}');
+
+
+			await assetTransfer.payOrder(transactionContext, orderno, 'erc20', 'alice');
+			expect(100).to.eql((await assetTransfer.balanceOf(transactionContext, 'alice')));
+			expect(100).to.eql((await assetTransfer.balanceOf(transactionContext, 'hotelaccount')));
+
+			let r = await assetTransfer.getOrder(transactionContext, orderno);
+			await assetTransfer.addComment(transactionContext, orderno, 5, 'nice');
+			r = await assetTransfer.getOrder(transactionContext, orderno);
+			r = JSON.parse(r);
+			expect('已评论').to.eq(r.value.status);
+
+			r = await assetTransfer.getAllComment(transactionContext);
+			console.log(r);
+		});
+	});
+});
+

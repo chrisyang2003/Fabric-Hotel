@@ -5,7 +5,8 @@ const express = require('express');
 const router = express.Router();
 
 const fabric = require('../fabric_sdk_node/gateway')
-const { BlockDecoder } = require('fabric-common')
+const { BlockDecoder } = require('fabric-common');
+const { json } = require('express');
 
 
 
@@ -47,6 +48,7 @@ router.get('/getall', async (req, res, next) => {
         next(err)
     }
 })
+
 router.get('/orderList', async (req, res, next) => {
     const user = req.user.user
 
@@ -143,8 +145,37 @@ router.get('/addComment', async (req, res, next) => {
     const network = await fabric.gateway('mychannel')
     const contract = network.getContract('hotel');
 
+    const grade = req.query.grade
+    const comment = req.query.comment
+    const id = req.query.orderid
+
+    // async addComment(ctx, orderno, grade, comment)
+    let r = await contract.submitTransaction('addComment', id, grade, comment);
+
+    res.json({
+        code : 200,
+        msg: r.toString(),
+    })
+    console.log(r.toString());
     
 
+})
+
+router.get('/getAllComment', async (req, res, next) => {
+    const network = await fabric.gateway('mychannel')
+    const contract = network.getContract('hotel');
+    let result = await contract.evaluateTransaction('getAllComment');
+
+    let comments = []
+    JSON.parse(result.toString()).forEach(element => {
+        comments.push(element.value)
+    })
+    
+    res.json({
+        code: 200,
+        msg: '',
+        data: comments
+    })
 })
 
 router.get('/detail', async (req, res, next) => {

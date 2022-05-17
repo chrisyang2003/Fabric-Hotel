@@ -62,16 +62,46 @@ router.get('/delete', async (req, res, next) => {
 })
 
 router.get('/login', async (req, res, next) => {
-  const user = req.query.userpk
+  const user = req.query.account
+  const passwdlogin = req.query.passwdLogin
+  const passwd = req.query.passwd
+  const proof = req.query.proof
 
-  res.json({
-    data: { 
-      token: jwt.sign({
-        user: user
-      }, key, { expiresIn: '1day' }),
-      user: user
+
+  const network = await fabric.gateway('mychannel')
+  const contract = network.getContract('hotel');
+
+  console.log(user);
+  
+  let r = await contract.evaluateTransaction('getUser', user)
+  usereslut = JSON.parse(r.toString())
+  console.log('r: ',usereslut.value.r)
+  try{
+    let r = await axios.get(zkpserver + '/user/login',{
+      params:{
+      userpk: user,
+      proof, proof,
+      r: usereslut.value.r
     }
-  })
+    } )
+
+    res.json({
+      code: 200,
+      msg: '登陆成功',
+      data: { 
+        token: jwt.sign({
+          user: user
+        }, key, { expiresIn: '1day' }),
+        user: user
+      }
+    })
+  
+  }catch(err){
+
+  }
+  
+
+  
 })
 
 

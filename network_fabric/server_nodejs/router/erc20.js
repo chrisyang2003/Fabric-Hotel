@@ -62,6 +62,19 @@ router.get('/transfer', async (req, res, next) => {
     
 })
 
+router.get('/querybalance', async (req, res, next) => {
+    const network = await fabric.gateway('mychannel')
+    const contract = network.getContract('hotel');
+
+    const user = req.query.user;
+    let r = await contract.evaluateTransaction('balanceOf', user);
+    console.log(r.toString())
+
+    res.send({
+        balance: r.toString()
+    })
+})
+
 router.get('/balance', async (req, res, next) => {
     const network = await fabric.gateway('mychannel')
     const contract = network.getContract('hotel');

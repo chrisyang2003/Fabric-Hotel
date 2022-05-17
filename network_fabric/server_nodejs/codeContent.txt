@@ -1,0 +1,677 @@
+====================/fabric_sdk_node/registerUser.js====================
+'use strict';
+
+const { Wallets } = require('fabric-network');
+const FabricCAServices = require('fabric-ca-client');
+const fs = require('fs');
+const path = require('path');
+
+async function main() {
+    try {
+        // load the network configuration
+        const ccpPath = path.resolve(__dirname, '..', '..', 'network','test-network', 'organizations', 'peerOrganizations', 'org1.example.com', 'connection-org1.json');
+        const ccp = JSON.parse(fs.readFileSync(ccpPath, 'utf8'));
+
+        // Create a new CA client for interacting with the CA.
+        const caURL = ccp.certificateAuthorities['ca.org1.example.com'].url;
+        const ca = new FabricCAServices(caURL);
+
+        // Create a new file system based wallet for managing identities.
+        const walletPath = path.join(__dirname, 'wallet');
+        const wallet = await Wallets.newFileSystemWallet(walletPath);
+        console.log(`Wallet path: ${walletPath}`);
+
+        // Check to see if we've already enrolled the user.
+        const userIdentity = await wallet.get('appUser2');
+        if (userIdentity) {
+            console.log('An identity for the user "appUser2" already exists in the wallet');
+            return;
+        }
+
+        // Check to see if we've already enrolled the admin user.
+        const adminIdentity = await wallet.get('admin');
+        if (!adminIdentity) {
+            console.log('An identity for the admin user "admin" does not exist in the wallet');
+            console.log('Run the enrollAdmin.js application before retrying');
+            return;
+        }
+
+        // build a user object for authenticating with the CA
+        const provider = wallet.getProviderRegistry().getProvider(adminIdentity.type);
+        const adminUser = await provider.getUserContext(adminIdentity, 'admin');
+
+        // Register the user, enroll the user, and import the new identity into the wallet.
+        const secret = await ca.register({
+            affiliation: 'org1.department1',
+            enrollmentID: 'appUser2',
+            role: 'client'
+        }, adminUser);
+        const enrollment = await ca.enroll({
+            enrollmentID: 'appUser2',
+            enrollmentSecret: secret
+        });
+        const x509Identity = {
+            credentials: {
+                certificate: enrollment.certificate,
+                privateKey: enrollment.key.toBytes(),
+            },
+            mspId: 'Org1MSP',
+            type: 'X.509',
+        };
+        await wallet.put('appUser2', x509Identity);
+        console.log('Successfully registered and enrolled admin user "appUser2" and imported it into the wallet');
+
+    } catch (error) {
+        console.error(`Failed to register user "appUser2": ${error}`);
+        process.exit(1);
+    }
+}
+
+main();
+
+====================/fabric_sdk_node/gateway.js====================
+'use strict';
+
+const { Gateway, Wallets } = require('fabric-network');
+const path = require('path');
+const fs = require('fs');
+
+
+exports.gateway = async function main(channelName) {
+    try {
+        // load the network configuration
+        const ccpPath = path.resolve(__dirname, '..', '..', 'network','test-network', 'organizations', 'peerOrganizations', 'org1.example.com', 'connection-org1.json');
+        const ccp = JSON.parse(fs.readFileSync(ccpPath, 'utf8'));
+
+        // Create a new file system based wallet for managing identities.
+        const walletPath = path.join(__dirname, 'wallet');
+        const wallet = await Wallets.newFileSystemWallet(walletPath);
+
+        // Check to see if we've already enrolled the user.
+        const identity = await wallet.get('appUser2');
+        if (!identity) {
+            console.log('An identity for the user "appUser2" does not exist in the wallet');
+            console.log('Run the registerUser.js application before retrying');
+            return;
+        }
+
+        // Create a new gateway for connecting to our peer node.
+        const gateway = new Gateway();
+        await gateway.connect(ccp, { wallet, identity: 'appUser2', discovery: { enabled: true, asLocalhost: true } });
+
+        
+        return await gateway.getNetwork(channelName);
+
+        
+        // Disconnect from the gateway.
+        await gateway.disconnect();
+        
+    } catch (error) {
+        console.error(`Failed to evaluate transaction: ${error}`);
+        process.exit(1);
+    }
+}
+
+
+====================/fabric_sdk_node/enrollAdmin.js====================
+'use strict';
+
+const FabricCAServices = require('fabric-ca-client');
+const { Wallets } = require('fabric-network');
+const fs = require('fs');
+const path = require('path');
+
+async function main() {
+    try {
+        // load the network configuration
+        const ccpPath = path.resolve(__dirname, '..', '..', 'network','test-network', 'organizations', 'peerOrganizations', 'org1.example.com', 'connection-org1.json');
+        const ccp = JSON.parse(fs.readFileSync(ccpPath, 'utf8'));
+
+        // Create a new CA client for interacting with the CA.
+        const caInfo = ccp.certificateAuthorities['ca.org1.example.com'];
+        const caTLSCACerts = caInfo.tlsCACerts.pem;
+        const ca = new FabricCAServices(caInfo.url, { trustedRoots: caTLSCACerts, verify: false }, caInfo.caName);
+
+        // Create a new file system based wallet for managing identities.
+        const walletPath = path.join(__dirname, 'wallet');
+        const wallet = await Wallets.newFileSystemWallet(walletPath);
+        console.log(`Wallet path: ${walletPath}`);
+
+        // // Check to see if we've already enrolled the admin user.
+        const identity = await wallet.get('admin');
+        if (identity) {
+            console.log('An identity for the admin user "admin" already exists in the wallet');
+            return;
+        }
+
+        // // Enroll the admin user, and import the new identity into the wallet.
+        const enrollment = await ca.enroll({ enrollmentID: 'admin', enrollmentSecret: 'adminpw' });
+        const x509Identity = {
+            credentials: {
+                certificate: enrollment.certificate,
+                privateKey: enrollment.key.toBytes(),
+            },
+            mspId: 'Org1MSP',
+            type: 'X.509',
+        };
+        await wallet.put('admin', x509Identity);
+        console.log('Successfully enrolled admin user "admin" and imported it into the wallet');
+
+    } catch (error) {
+        console.error(`Failed to enroll admin user "admin": ${error}`);
+        process.exit(1);
+    }
+}
+
+main();
+
+====================/fabric_sdk_node/wallet/admin.id====================
+{"credentials":{"certificate":"-----BEGIN CERTIFICATE-----\nMIIB6zCCAZGgAwIBAgIUebyy2obQd9tqVGlHk6drMRREXRwwCgYIKoZIzj0EAwIw\naDELMAkGA1UEBhMCVVMxFzAVBgNVBAgTDk5vcnRoIENhcm9saW5hMRQwEgYDVQQK\nEwtIeXBlcmxlZGdlcjEPMA0GA1UECxMGRmFicmljMRkwFwYDVQQDExBmYWJyaWMt\nY2Etc2VydmVyMB4XDTIyMDUxNzA0MzMwMFoXDTIzMDUxNzA0NDQwMFowITEPMA0G\nA1UECxMGY2xpZW50MQ4wDAYDVQQDEwVhZG1pbjBZMBMGByqGSM49AgEGCCqGSM49\nAwEHA0IABCxZC/oZgbLDITIOVYZ687v2yWDtiXDiUDy0qUMlPAyTOp0+1cJi/PXh\nxxM0R+PPlZpddGBQGkLhOApRp3shbRejYDBeMA4GA1UdDwEB/wQEAwIHgDAMBgNV\nHRMBAf8EAjAAMB0GA1UdDgQWBBQM1zZ3ij2qczjRFc4ltyK2Hz2PMTAfBgNVHSME\nGDAWgBQlXQbryPpHXUTB1WbezPDI8P2IoDAKBggqhkjOPQQDAgNIADBFAiEA2Ktf\nrg26k17wLdcuNPc9vF0EnPaW90YWLi/vaQFwCnYCIDxqacdYmaZI7BYOvIwXgm58\nHui1AaIptWH4Mi5kKZrk\n-----END CERTIFICATE-----\n","privateKey":"-----BEGIN PRIVATE KEY-----\r\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgl9Lj6YpiDy3z02AQ\r\nmu2KerhHLPz0gt0On9h84L1/bn6hRANCAAQsWQv6GYGywyEyDlWGevO79slg7Ylw\r\n4lA8tKlDJTwMkzqdPtXCYvz14ccTNEfjz5WaXXRgUBpC4TgKUad7IW0X\r\n-----END PRIVATE KEY-----\r\n"},"mspId":"Org1MSP","type":"X.509","version":1}
+====================/fabric_sdk_node/wallet/appUser2.id====================
+{"credentials":{"certificate":"-----BEGIN CERTIFICATE-----\nMIICfTCCAiSgAwIBAgIUOgcL6jbADLmE9FprJjwWYrLnps0wCgYIKoZIzj0EAwIw\naDELMAkGA1UEBhMCVVMxFzAVBgNVBAgTDk5vcnRoIENhcm9saW5hMRQwEgYDVQQK\nEwtIeXBlcmxlZGdlcjEPMA0GA1UECxMGRmFicmljMRkwFwYDVQQDExBmYWJyaWMt\nY2Etc2VydmVyMB4XDTIyMDUxNzA0MzMwMFoXDTIzMDUxNzA0NDQwMFowRTEwMAsG\nA1UECxMEb3JnMTANBgNVBAsTBmNsaWVudDASBgNVBAsTC2RlcGFydG1lbnQxMREw\nDwYDVQQDEwhhcHBVc2VyMjBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABLsx2VX4\nXYA5xIF2f7BX7lU5XuBgW1MTOIpPRFIh1J5T7d/FQNzSo0YsW+V9Xh8KgdHvn2fz\ncH9O9Jc5wHXIvMujgc4wgcswDgYDVR0PAQH/BAQDAgeAMAwGA1UdEwEB/wQCMAAw\nHQYDVR0OBBYEFKaWDshtXwph269/5uzLK+ou0eo+MB8GA1UdIwQYMBaAFCVdBuvI\n+kddRMHVZt7M8Mjw/YigMGsGCCoDBAUGBwgBBF97ImF0dHJzIjp7ImhmLkFmZmls\naWF0aW9uIjoib3JnMS5kZXBhcnRtZW50MSIsImhmLkVucm9sbG1lbnRJRCI6ImFw\ncFVzZXIyIiwiaGYuVHlwZSI6ImNsaWVudCJ9fTAKBggqhkjOPQQDAgNHADBEAiBq\nqdzU1RfPurqFOQ8M4l5aflMguGzOQRUUItDqiammpAIgVXh0v08VNY9Fw9TPEPmB\nWSRk6wN+/3oSA7IQZKNMQCg=\n-----END CERTIFICATE-----\n","privateKey":"-----BEGIN PRIVATE KEY-----\r\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgZAq5+KNORpuKB6d2\r\njR9TAGv9mZYy+H1KCunxSPN22gOhRANCAAS7MdlV+F2AOcSBdn+wV+5VOV7gYFtT\r\nEziKT0RSIdSeU+3fxUDc0qNGLFvlfV4fCoHR759n83B/TvSXOcB1yLzL\r\n-----END PRIVATE KEY-----\r\n"},"mspId":"Org1MSP","type":"X.509","version":1}
+====================/router/user.js====================
+
+const express = require('express');
+const router = express.Router();
+
+const jwt = require('jsonwebtoken')
+const key = 'secret12345'
+
+
+const fabric = require('../fabric_sdk_node/gateway')
+const { BlockDecoder } = require('fabric-common')
+
+
+
+// api/user
+
+
+router.get('/index', (req, res, next) => {
+  const user = req.user.user
+
+  let r = {
+    code: 1,
+    data: {
+      token: "",
+      user: {
+        avatar: "http://chrisyy.top:5000/uploads/20220405/0af8bc83d3a810dae33ba7ad6a3fb135.jpeg",
+        bio: "A hotel on HyperledgerFabric",
+        createtime: 1652621771,
+        expires_in: 2592000,
+        expiretime: 1655213771,
+        gender: 0,
+        id: 1,
+        level: 0,
+        mobile: "13888888888",
+        money: "0.00",
+        nickname: user,
+        score: 0,
+        token: "5c163acd-c698-4d8c-a319-b7beea98a97e",
+        user_id: 1,
+        msg: "登录成功",
+        time: "1652621771",
+      }
+    }
+  }
+
+  res.json(r)
+})
+var request = require('request');
+const axios = require('axios').default;
+
+const zkpserver = 'http://127.0.0.1:7070'
+
+router.get('/delete', async (req, res, next) => {
+  const user = req.query.user
+  const network = await fabric.gateway('mychannel')
+  const contract = network.getContract('hotel');
+
+  let r = contract.submitTransaction('deleteUser', user)
+
+
+  console.log(user);
+  
+})
+
+router.get('/login', async (req, res, next) => {
+  const user = req.query.account
+  const passwdlogin = req.query.passwdLogin
+  const passwd = req.query.passwd
+  const proof = req.query.proof
+
+
+  const network = await fabric.gateway('mychannel')
+  const contract = network.getContract('hotel');
+
+  console.log(user);
+  
+  let r = await contract.evaluateTransaction('getUser', user)
+  usereslut = JSON.parse(r.toString())
+  console.log('r: ',usereslut.value.r)
+  try{
+    let r = await axios.get(zkpserver + '/user/login',{
+      params:{
+      userpk: user,
+      proof, proof,
+      r: usereslut.value.r
+    }
+    } )
+
+    res.json({
+      code: 200,
+      msg: '登陆成功',
+      data: { 
+        token: jwt.sign({
+          user: user
+        }, key, { expiresIn: '1day' }),
+        user: user
+      }
+    })
+  
+  }catch(err){
+
+  }
+  
+
+  
+})
+
+
+router.get('/register', async (req, res, next) => {
+  let a = res
+  const passwd = req.query.passwd;
+
+  axios.get(zkpserver + '/user/register', {
+    params: {
+      passwd: passwd
+    }
+  }).then(async (res) => {
+
+    const network = await fabric.gateway('mychannel')
+    const contract = network.getContract('hotel');
+
+    user = res.data.data
+    // console.log(res.data.data)
+
+
+    // // async reigster (ctx, pk, r, ext, enc_pk)
+    const trx = await contract.submitTransaction('reigster', user.userpk, user.r, '{}', user.pk)
+  
+    playload = {
+      user: user.userpk
+    }
+
+    a.json({
+      data: { 
+        trx: trx.toString(),
+        token: jwt.sign(playload, key, { expiresIn: '1day' }),
+        user: user
+      }
+    })
+
+    
+  })
+  
+})
+
+router.get('/userlist', async (req, res, next) => {
+  const network = await fabric.gateway('mychannel')
+  const contract = network.getContract('hotel');
+  var result = await contract.evaluateTransaction('getAllUser');
+  
+  res.json(JSON.parse(result.toString()))
+  
+})
+
+
+module.exports = router
+====================/router/erc20.js====================
+
+const express = require('express');
+const router = express.Router();
+const fabric = require('../fabric_sdk_node/gateway')
+
+
+
+// erc20
+
+router.get('/tokeninfo', async (req, res, next) => {
+    const network = await fabric.gateway('mychannel')
+    const contract = network.getContract('hotel');
+
+    res.send(JSON.stringify({
+        tokenName: (await contract.evaluateTransaction('tokenName')).toString(),
+        Symbol: (await contract.evaluateTransaction('Symbol')).toString(),
+        totalSupply: (await contract.evaluateTransaction('totalSupply')).toString(),
+    }))
+})
+
+router.get('/tokenlist', async (req, res, next) => {
+    const network = await fabric.gateway('mychannel')
+    const contract = network.getContract('hotel');
+
+    let r = await contract.evaluateTransaction('getTokenList');
+    r = JSON.parse(r.toString());
+    
+    res.json(r)
+})
+
+router.get('/mint', async (req, res, next) => {
+    const user = req.query.user
+    const value = req.query.value
+
+    const network = await fabric.gateway('mychannel')
+    const contract = network.getContract('hotel');
+
+    let r = await contract.submitTransaction('mint', user , value);
+    // r = JSON.parse(r.toString());
+    res.json({
+        code: 200,
+    })
+    
+})
+
+router.get('/transfer', async (req, res, next) => {
+    const from = req.query.from
+    const to = req.query.to
+    const value = req.query.value
+
+
+    const network = await fabric.gateway('mychannel')
+    const contract = network.getContract('hotel');
+    console.log(from, to ,value);
+
+    
+    let r = await contract.submitTransaction('transfer', from , to, value);
+    // r = JSON.parse(r.toString());
+    res.json({
+        code: 200,
+    })
+    
+})
+
+router.get('/querybalance', async (req, res, next) => {
+    const network = await fabric.gateway('mychannel')
+    const contract = network.getContract('hotel');
+
+    const user = req.query.user;
+    let r = await contract.evaluateTransaction('balanceOf', user);
+    console.log(r.toString())
+
+    res.send({
+        balance: r.toString()
+    })
+})
+
+router.get('/balance', async (req, res, next) => {
+    const network = await fabric.gateway('mychannel')
+    const contract = network.getContract('hotel');
+
+    const user = req.user.user;
+    console.log(user);
+    
+    try {
+        let r = await contract.evaluateTransaction('balanceOf', user);
+        console.log(r.toString())
+
+        res.send({
+            balance: r.toString()
+        })
+
+    } catch (error) {
+        res.send({
+            balance: 0
+        })
+        
+    }
+    
+})
+
+
+module.exports = router
+====================/router/wallet.js====================
+const express = require('express');
+const router = express.Router();
+
+wallet = []
+router.get('/wallet/', async(req, res, next) => {
+
+  const decrypted = public_key.decrypt(encrypted, 'utf8');
+  if (ismine(decrypted)){
+    const v = decrypted.v
+    const rho = decrypted.rho
+    var privateMoney = {
+      isused: false,                  // 是否使用
+      value: 0,                       // 面额
+      nullifier: Hash(sk + rho),      // 序列号
+      Commitment: Hash(pk + v + rho), // 承诺
+      rho: rho,                       // 随机数
+      timestamp: stamp                // 入包时间
+    }
+    wallet.push(privateMoney)
+  }
+  
+
+  privatebalance += 1
+  res.send(JSON.stringify({balance: privatebalance}))
+})
+
+
+module.exports = router
+====================/router/order.js====================
+
+
+
+const express = require('express');
+const router = express.Router();
+
+const fabric = require('../fabric_sdk_node/gateway')
+const { BlockDecoder } = require('fabric-common');
+const { json } = require('express');
+
+
+
+async function getTrxDetailById(id) {
+    const network = await fabric.gateway('mychannel')
+    const contract = network.getContract('qscc');
+
+    var resultByte = await contract.evaluateTransaction('GetTransactionByID', 'mychannel', id);
+    const unSerialization = BlockDecoder.decodeTransaction(resultByte).transactionEnvelope.payload
+
+    const header = unSerialization.header.channel_header
+    const mspid = unSerialization.header.signature_header.creator.mspid
+
+    const writeset = unSerialization.data.actions[0].payload.action.proposal_response_payload.extension.results.ns_rwset[1].rwset.writes[0]
+    const writekey = writeset.key
+    const writedata = writeset.value.toString()
+    const ccname = unSerialization.data.actions[0].payload.chaincode_proposal_payload.input.chaincode_spec.chaincode_id.name
+
+    return {
+        writekey: writekey,
+        timestamp: header.timestamp,
+        channel_id: header.channel_id,
+        trx: header.tx_id,
+        ccname: ccname,
+        mspid: mspid,
+        data: writedata
+    }
+}
+
+const axios = require('axios').default;
+router.get('/getall', async (req, res, next) => {
+    try {
+        const network = await fabric.gateway('mychannel')
+        const contract = network.getContract('hotel');
+ 
+        let result = await contract.evaluateTransaction('getAllorder');
+        res.send(JSON.parse(result))
+    } catch (err) {
+        next(err)
+    }
+})
+
+router.get('/orderList', async (req, res, next) => {
+    const user = req.user.user
+
+    const network = await fabric.gateway('mychannel')
+    const contract = network.getContract('hotel');
+
+    let orderlist = await contract.evaluateTransaction('getAllorder')
+
+    // get house info 
+    let userlist = []
+
+    let p = []
+    let rlist = JSON.parse(orderlist.toString())
+    for await (let el of rlist){
+        let order = el.value
+        if (order.user === user) {
+            const backaddr = 'http://127.0.0.1:8000/addons/booking/house/detail?id=' + order.houseid
+            let house = await axios.get(backaddr)
+            order.house = house.data.data
+            userlist.push(order)
+
+        }
+    }
+    res.json({
+        code: 200,
+        data: userlist
+    })
+})
+
+router.get('/pay', async (req, res, next) => {
+    const network = await fabric.gateway('mychannel')
+    const contract = network.getContract('hotel');
+
+    const orderid = req.query.id
+    const type = req.query.type
+    const user = req.user.user
+
+    console.log(orderid, type, user)
+    // async payOrder(ctx, orderno, type, user){
+    await contract.submitTransaction('payOrder', orderid, type, user)
+
+    res.json({
+        code: 200
+    })
+})
+
+router.get('/add', async (req, res, next) => {
+    try {
+
+        const network = await fabric.gateway('mychannel')
+        const contract = network.getContract('hotel');
+
+        const params = req.query
+        const user = req.user.user
+
+        console.log(req.query);
+
+        // exports.addOrder = async function(ctx, houseid, user, price, arg)
+        let orderno = await contract.submitTransaction('addOrder', params.id, user, params.price, '{}')
+
+        res.json({
+            code: 200,
+            data: orderno.toString()
+        })
+
+
+    } catch (err) {
+        next(err)
+    }
+})
+
+router.get('/get', async (req, res, next) => {
+    try {
+        const id = req.query.id
+        if (!id) {
+            res.status(400).send('empty!')
+            return
+        }
+        const network = await fabric.gateway('mychannel')
+        const contract = network.getContract('hotel');
+
+        result = await contract.evaluateTransaction('getOrder', id);
+        const trx = JSON.parse(result.toString()).value.trx
+
+        //   console.log(trx)
+        res.send((await getTrxDetailById(trx)))
+    } catch (err) {
+        next(err)
+    }
+})
+
+router.get('/addComment', async (req, res, next) => {
+    
+    const network = await fabric.gateway('mychannel')
+    const contract = network.getContract('hotel');
+
+    const grade = req.query.grade
+    const comment = req.query.comment
+    const id = req.query.orderid
+
+    // async addComment(ctx, orderno, grade, comment)
+    let r = await contract.submitTransaction('addComment', id, grade, comment);
+
+    res.json({
+        code : 200,
+        msg: r.toString(),
+    })
+    console.log(r.toString());
+    
+
+})
+
+router.get('/getAllComment', async (req, res, next) => {
+    const network = await fabric.gateway('mychannel')
+    const contract = network.getContract('hotel');
+    let result = await contract.evaluateTransaction('getAllComment');
+
+    let comments = []
+    JSON.parse(result.toString()).forEach(element => {
+        comments.push(element.value)
+    })
+    
+    res.json({
+        code: 200,
+        msg: '',
+        data: comments
+    })
+})
+
+router.get('/detail', async (req, res, next) => {
+    let id = req.query.id
+
+    const network = await fabric.gateway('mychannel')
+    const contract = network.getContract('hotel');
+
+    let result = await contract.evaluateTransaction('getOrder', id);
+    const order = JSON.parse(result.toString()).value
+
+    const backaddr = 'http://127.0.0.1:8000/addons/booking/house/detail?id=' + order.houseid
+
+
+
+    axios.get(backaddr).then((r) => {
+
+        order.house = r.data.data
+        
+
+        res.json({
+            code: 200,
+            data: order
+        })
+
+    })
+    
+})
+
+
+module.exports = router
+====================/router/trx.js====================
+
+
+const express = require('express');
+const router = express.Router();
+
+module.exports = router

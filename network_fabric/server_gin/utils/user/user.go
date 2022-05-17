@@ -13,6 +13,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
+	"server_gin/utils/rsa"
 )
 
 // 全局变量
@@ -186,8 +188,8 @@ func Login(c *gin.Context) {
 	userproof.ReadFrom(bytes.NewBuffer(proofbytes))
 
 	err := groth16.Verify(userproof, vk, publicWitness)
-
 	if err != nil {
+		fmt.Println("Proof err: ",err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err,
 		})

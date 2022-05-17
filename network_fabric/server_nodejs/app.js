@@ -79,16 +79,22 @@ const expressJwt = require('express-jwt');
 const auth = expressJwt({secret: 'secret12345'}).unless({
   path: [
     '/order/getall',
+    // '/order/orderList',
+
     '/favicon.ico',
 
     '/user/register',
     '/user/userlist',
     '/user/delete',
+    '/user/login',
 
-    '/api/user/register',
     '/order/get',
     '/erc20/tokenlist',
-    '/erc20/tokeninfo'
+    '/erc20/tokeninfo',
+    '/erc20/transfer',
+
+
+    '/erc20/mint'
   ]
 })
 //   path:['/users','/login', '/api/user/register']})

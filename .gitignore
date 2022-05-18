@@ -13,3 +13,5 @@ server_nodejs/fabric_sdk_node/wallet/*
 network_fabric/explorer/organizations/
 network_fabric/server_nodejs/fabric_sdk_node/wallet/*
 network_fabric/server_nodejs/fabric_sdk_node/wallet/admin.id
+network_fabric/server_nodejs/fabric_sdk_node/wallet/admin.id
+network_fabric/server_nodejs/fabric_sdk_node/wallet/appUser2.id

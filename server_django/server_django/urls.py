@@ -24,7 +24,9 @@ urlpatterns = [
     path('governance/trx', gover.trxList) ,
 
     # admin
-    path('vue-element-admin/user/login', admin.login),
+    path('vue-element-admin/user/login', admin.login),    
+    path('vue-element-admin/user/logout', admin.login),
+
     path('vue-element-admin/user/info', admin.info),
     path('vue-element-admin/transaction/list', admin.List),
     path('admin/init', admin.init),
@@ -44,9 +46,6 @@ urlpatterns = [
     path('addons/booking/house/houseList', house.houseList),
     path('addons/booking/house/detail', house.detail),
     path('addons/booking/house/booking', house.booking),
-
-    #user
-    path('api/my/balance', user.balance),
 
     # order
     path('addons/booking/order/pay', order.pay),

@@ -48,9 +48,9 @@ export default {
         let field = [];
         let piedata = [];
         res.forEach((element) => {
-          field.push(element.key);
+          field.push(element.key.slice(0, 15) + '...');
           piedata.push({
-            name: element.key,
+            name: element.key.slice(0, 15) + '...',
             value: element.value,
           });
         });

@@ -65,7 +65,7 @@ export default {
           legend: {
             left: "center",
             bottom: "10",
-            data: field,
+            data: ['承诺数', '序列号数'],
           },
           series: [
             {
@@ -74,7 +74,17 @@ export default {
               roseType: "radius",
               radius: [15, 95],
               center: ["47%", "38%"],
-              data: piedata,
+              data: [
+                {
+                  name: '承诺数',
+                  value: '9',
+                },
+                {
+                  name: '序列号数',
+                  value: '9',
+                }
+
+              ],
               animationEasing: "cubicInOut",
               animationDuration: 2600,
             },

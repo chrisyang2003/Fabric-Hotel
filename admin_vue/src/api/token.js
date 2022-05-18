@@ -17,3 +17,13 @@ export function getTokenInfo() {
         method: 'get',
     })
 }
+
+export function querybalance() {
+    return request({
+        url: '/erc20/querybalance',
+        method: 'get',
+        params: {
+            user: 'hotelaccount'
+        }
+    })
+}

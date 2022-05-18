@@ -62,15 +62,16 @@ export default {
 					this.form.orderid = this.orderid;
 					this.$api.addComment(this.form).then(res=>{
 
+						this.$u.toast(res.msg)
 						
-						this.$u.toast(res.msg);
-						if(res.code==1){
-							setTimeout(()=>{
-								uni.navigateBack({
-									delta:1
-								})
-							},1000)
-						}
+						// this.$u.toast(res.msg);
+						// if(res.code==1){
+						// 	setTimeout(()=>{
+						// 		uni.navigateBack({
+						// 			delta:1
+						// 		})
+						// 	},1000)
+						// }
 					})
 				} else {
 					console.log('验证失败');

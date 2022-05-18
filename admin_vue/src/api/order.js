@@ -16,3 +16,10 @@ export function getOrderDetailById(id) {
     }
   })
 }
+
+export function getAllComment(id) {
+  return request({
+    url: '/order/getAllComment',
+    method: 'get',
+  })
+}

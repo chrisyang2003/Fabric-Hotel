@@ -69,7 +69,6 @@ const upload = async function(vm, {
 
 const install = (Vue, vm) => {
 
-
 	// 免登录接口
 	vm.$api.config 				= async (params = {}) => await vm.$u.get('http://chrisyy.top:8000/addons/booking/common/init', params);
 	vm.$api.mapSearch 			= async (params = {}) => await vm.$u.get('http://chrisyy.top:5000/addons/booking/common/mapSearch', params);

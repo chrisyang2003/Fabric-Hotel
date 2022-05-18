@@ -16,7 +16,7 @@
 				:class="{ 'u-m-t-20': index != 0 }"
 				v-for="(item, index) in orderList"
 				:key="index"
-				@click="goPage('/pages/order/housedetail?id=' + item.id)"
+				
 			>
 				<view class="top u-p-b-30 u-flex u-row-between">
 					<view class="u-font-30 text-weight u-line-1 title" v-text="item.house.name"></view>
@@ -72,7 +72,7 @@
 								type="primary"
 								:custom-style="{ backgroundColor: theme.bgColor, color: theme.color }"
 								size="mim"
-								@click="goPage('/pages/order/payment?id=' + item.id)"
+								@click="goPage('/pages/order/payment?id=' + item.orderno)"
 							>
 								立即支付
 							</u-button>
@@ -188,7 +188,7 @@ export default {
 		},
 		clickSwiper(index, item) {
 			console.log(index, item);
-			this.goPage('/pages/order/housedetail?id=' + item.id);
+			// this.goPage('/pages/order/housedetail?id=' + item.id);
 		},
 		//取消订单
 		cancel(id, index) {

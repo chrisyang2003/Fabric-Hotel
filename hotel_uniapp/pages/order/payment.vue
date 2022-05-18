@@ -92,6 +92,7 @@ export default {
 		getbalance(){
 			this.$api.getBalance().then(res => {
 				this.balance = res.balance
+				return this.balance
 			})
 			
 			// this.$$api.getBalance().then(res => {
@@ -176,11 +177,18 @@ export default {
 				id: this.id,
 				type: this.paytype,
 			};
-			let res = await this.$api.orderPay(data);
 
-			console.log(res)
-			this.$u.toast('支付成功！');
-			this.$u.route('/pages/order/houseorder')
+
+			if (this.total > this.balance){
+				this.$u.toast('余额不足!!!')
+			}else{
+				let res = await this.$api.orderPay(data);
+				console.log(res)
+				this.$u.toast('支付成功！');
+				this.$u.route('/pages/order/houseorder')
+			}
+
+	
 		}
 	}
 };

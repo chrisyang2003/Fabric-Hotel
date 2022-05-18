@@ -119,8 +119,9 @@ export default {
         this.$u.toast(res.msg);
         return;
       }
-    //   this.$u.vuex("vuex_token", res.data.token);
-    //   this.$u.vuex("vuex_user", res.data.user || {});
+      this.$u.vuex("vuex_token", res.data.token);
+      
+      this.$u.vuex("vuex_user", res.data.user || {});
     //   this.success(2);
     },
   },

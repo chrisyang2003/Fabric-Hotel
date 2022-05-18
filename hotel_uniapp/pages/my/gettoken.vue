@@ -6,13 +6,18 @@
 		<view class="u-p-30">
 			<u-cell-group>				
 				<!-- <u-cell-item icon="order" title="房间订单" @click="goPage('/pages/order/houseorder',true)"></u-cell-item> -->
-				<u-cell-item icon="lock-opened-fill" title="ERC20代币" :arrow="false" :label="'余额: ' + erc20"></u-cell-item>
-				<u-cell-item icon="lock-fill" title="隐私代币" :arrow="false" :label="'余额: ' + ptn"></u-cell-item>
+				<u-cell-item icon="lock-opened-fill" title="ERC20代币" :arrow="false" :label="'余额: ' + erc20">
+					<u-button class="bu"  :custom-style="{ backgroundColor: theme.bgColor, color: theme.color}" @click="submit">获取1000个</u-button>
+					<!-- <u-radio slot="right-icon" name="privacy" :active-color="theme.bgColor"></u-radio> -->
+				</u-cell-item>
+				<u-cell-item icon="lock-fill" title="隐私代币" :arrow="false" :label="'余额: ' + ptn">
+					<u-radio slot="right-icon" name="privacy" :active-color="theme.bgColor"></u-radio>
+				</u-cell-item>
 
 			</u-cell-group>
 
 			<!-- <u--text type="primary" text="主色"></u--text> -->
-			<u-button class="bu" shape="square" :custom-style="{ backgroundColor: theme.bgColor, color: theme.color}" @click="submit">获取1000个</u-button>
+			
 		</view>
 	</view>
 </template>
@@ -30,10 +35,12 @@ export default {
 	},
 	methods: {
 		getBalance(){
-			this.$api.getBalance().then(res => {
-				this.erc20 = res.balance
-				console.log(res)
-			})
+			console.log('geterc20')
+			// console.log(res)
+			// this.$api.getBalance().then(res => {
+			// 	this.erc20 = res.balance
+			// 	console.log(res)
+			// })
 		},
 		submit(){
 			this.$api.getErc20({
@@ -56,7 +63,7 @@ page {
 }
 
 .bu{
-	margin-top: 20px;
+	width: 30px;
 }
 
 </style>

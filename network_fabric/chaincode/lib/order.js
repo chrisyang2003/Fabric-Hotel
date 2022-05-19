@@ -64,6 +64,7 @@ function commentKey(id){
 	return 'comment:' + id;
 }
 exports.addComment = async function(ctx, orderno, grade, comment) {
+	
 	const orderinfo = JSON.parse((await this.getOrder(ctx, orderno))).value;
 	let save = {
 		orderno: orderno,

@@ -87,6 +87,7 @@ const auth = expressJwt({secret: 'secret12345'}).unless({
     '/user/userlist',
     '/user/delete',
     '/user/login',
+    '/user/wallet',
     
     '/order/get',
     '/order/getAllComment',

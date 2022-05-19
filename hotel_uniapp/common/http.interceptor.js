@@ -75,14 +75,16 @@ const install = (Vue, vm) => {
 	}
 	// 响应拦截，判断状态码是否通过
 	Vue.prototype.$u.http.interceptor.response = (res) => {			
-		//返回__token__,设置	
-		if (res.header.__token__) {
-			vm.$u.vuex('vuex__token__', res.header.__token__);
-		}		
+		// //返回__token__,设置	
+		// if (res.header.__token__) {
+		// 	vm.$u.vuex('vuex__token__', res.header.__token__);
+		// }		
+		console.log(res)
 		let result = res.data;		
-		if(result.data && result.data.__token__){
-			vm.$u.vuex('vuex__token__', result.data.__token__);
-		}
+		// if(result.data && result.data.__token__){
+		// 	vm.$u.vuex('vuex__token__', result.data.__token__);
+		// }
+
 		switch (result.code) {
 			case 1:
 			case 0:

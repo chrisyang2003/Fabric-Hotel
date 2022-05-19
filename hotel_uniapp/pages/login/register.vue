@@ -114,9 +114,9 @@ export default {
       this.userpk = res.data.user.userpk;
       this.proof = res.data.user.proof;
 
-      // this.$u.vuex('vuex_token', res.data.token);
+      this.$u.vuex('vuex_token', res.data.token);
 
-      // console.log('token:', res.data.token)
+      console.log('token:', res.data.token)
       // this.success(2);
     },
     // #ifdef MP-WEIXIN

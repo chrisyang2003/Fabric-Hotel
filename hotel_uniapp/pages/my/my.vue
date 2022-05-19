@@ -27,17 +27,17 @@
 		<view class="u-flex u-text-center u-p-l-30 u-p-r-30 u-p-t-50 u-p-b-50 bg-white">
 			<view class="u-flex-4" @click="goPage('/pages/order/houseorder?status=2',true)">
 				<view class="u-text-weight u-font-28">					
-					<text v-text="(vuex_user.order && vuex_user.order.paid) || 0"></text>
+					<text v-text="paid"></text>
 				</view>
 				<view class="u-m-t-20">待入住</view>
 			</view>
 			<view class="u-flex-4 u-border-left u-border-right" @click="goPage('/pages/order/houseorder?status=1',true)">
-				<view class="u-text-weight u-font-28"><text v-text="(vuex_user.order && vuex_user.order.created) || 0"></text></view>
+				<view class="u-text-weight u-font-28"><text v-text="created"></text></view>
 				<view class="u-m-t-20">待支付</view>
 			</view>
 			<view class="u-flex-4" @click="goPage('/pages/order/houseorder?status=3',true)">
 				<view class="u-text-weight u-font-28">					
-					<text v-text="(vuex_user.order && vuex_user.order.evaluate) || 0"></text>
+					<text v-text="evaluate"></text>
 				</view>
 				<view class="u-m-t-20">待评论</view>
 			</view>
@@ -46,10 +46,7 @@
 		<view class="u-m-t-30 u-m-b-15">
 			<u-cell-group>				
 				<u-cell-item icon="order" title="房间订单" @click="goPage('/pages/order/houseorder',true)"></u-cell-item>
-				<!-- <u-cell-item icon="integral-fill" title="我的积分" @click="goPage('/pages/score/score',true)"></u-cell-item> -->
-				<!-- <u-cell-item icon="pushpin-fill" title="每日一签" @click="toSignin"></u-cell-item>				 -->
-				<!-- <u-cell-item icon="heart-fill" title="我的收藏" @click="goPage('/pages/my/collect',true)"></u-cell-item> -->
-				<u-cell-item icon="edit-pen" title="留言板" @click="goPage('/pages/my/feedback',true)"></u-cell-item>
+				<!-- <u-cell-item icon="edit-pen" title="留言板" @click="goPage('/pages/my/feedback',true)"></u-cell-item> -->
 				<u-cell-item icon="rmb-circle-fill" title="获取代币" @click="goPage('/pages/my/gettoken',true)"></u-cell-item>
 
 				<u-cell-item icon="account-fill" title="个人资料" @click="goPage('/pages/my/profile',true)"></u-cell-item>
@@ -99,13 +96,23 @@ export default {
 			url: '',
 			form: {
 				avatar: ''
-			}
+			},
+			created: '',
+			evaluate: '',
+			paid: '',
 		};
 	},
 	methods: {		
 		getUserIndex: async function() {
 			let res = await this.$api.getUserIndex();
 			uni.stopPullDownRefresh();
+
+			let r = await this.$api.orderList()
+			this.created =  r.created
+			this.evaluate =  r.evaluate
+			this.paid =  r.paid
+
+
 
 			
 			if (res.code==1) {

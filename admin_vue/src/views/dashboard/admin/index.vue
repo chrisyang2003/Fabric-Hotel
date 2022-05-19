@@ -29,29 +29,12 @@
       </el-col>
 
       <el-col :xs="24" :sm="24" :lg="8">
-        <div class="chart-wrapper">
-          <line-chart :chart-data="lineChartData" />
+        <div class="chart-wrapper" >
+          <pie-chart class="pie"/>
         </div>
       </el-col>
     </el-row>
 
-    <el-row :gutter="32">
-      <!-- <el-col :xs="24" :sm="24" :lg="8">
-        <div class="chart-wrapper">
-          <raddar-chart />
-        </div>
-      </el-col> -->
-      <el-col :xs="24" :sm="24" :lg="12">
-        <div class="chart-wrapper">
-          <pie-chart />
-        </div>
-      </el-col>
-      <el-col :xs="24" :sm="24" :lg="12">
-        <div class="chart-wrapper">
-          <bar-chart />
-        </div>
-      </el-col>
-    </el-row>
 
   
   </div>
@@ -130,6 +113,7 @@ export default {
     background: #fff;
     padding: 16px 16px 0;
     margin-bottom: 32px;
+    height: 400px;
   }
 }
 
@@ -137,5 +121,9 @@ export default {
   .chart-wrapper {
     padding: 8px;
   }
+}
+
+.pie{
+  margin-top: 30px;
 }
 </style>

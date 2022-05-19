@@ -13,6 +13,9 @@ class mycontract extends Contract {
 	async InitLedger(ctx) {
 		await erc20.updateBalance(ctx, 'totalSupply', 0);
 		await erc20.updateBalance(ctx, 'hotelaccount', 0);
+
+		await privacy.init(ctx);
+
 		return ctx.stub.getTxID();
 	}
 
@@ -43,6 +46,20 @@ class mycontract extends Contract {
 	// private token
 
 	async commitCount(ctx){
+		return privacy.commitCount(ctx);
+	}
+
+	async getAllCommit(ctx){
+		return privacy.getAllCommit(ctx);
+	}
+
+	async privateMint(ctx, commit, value, enc){
+		await privacy.mint(ctx, commit, '', parseInt(value), '', enc);
+		return ctx.stub.getTxID();
+	}
+
+	async privatetotalSupply(ctx){
+		return await privacy.totalSupply(ctx);
 	}
 	// 承诺总数
 

@@ -68,7 +68,6 @@ func init() {
 	buf.Reset()
 	vk.WriteTo(&buf)
 	b64vk = base64.StdEncoding.EncodeToString(buf.Bytes())
-
 }
 
 func GetParams(c *gin.Context) {
@@ -189,7 +188,7 @@ func Login(c *gin.Context) {
 
 	err := groth16.Verify(userproof, vk, publicWitness)
 	if err != nil {
-		fmt.Println("Proof err: ",err)
+		fmt.Println("Proof err: ", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err,
 		})

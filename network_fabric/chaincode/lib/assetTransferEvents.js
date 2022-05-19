@@ -61,15 +61,6 @@ class mycontract extends Contract {
 	async privatetotalSupply(ctx){
 		return await privacy.totalSupply(ctx);
 	}
-	// 承诺总数
-
-	// 已经公开序列号总数
-
-	// 序列号列表
-
-	// 发行量
-
-
 
 
 	// order contract

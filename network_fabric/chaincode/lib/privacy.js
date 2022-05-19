@@ -48,13 +48,6 @@ exports.mint = async function(ctx, commit, pi, v, rho, enc) {
 
 };
 
-exports.transferWithUnspent = async function(ctx, ){
-
-};
-
-exports.getNull = async function(ctx) {
-
-};
 
 exports.getAllNull = async function(ctx) {
 	return await utils.getALlStatus(ctx, 'null');

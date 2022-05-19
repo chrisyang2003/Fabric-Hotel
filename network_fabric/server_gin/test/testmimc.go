@@ -1,4 +1,4 @@
-package mimcpackage
+package main
 
 import (
 	"fmt"

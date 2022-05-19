@@ -1,185 +1,190 @@
 ====================/utils\balance\main.go====================
-package balancepackage
-
-import (
-	"fmt"
-	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/backend"
-	"github.com/consensys/gnark/backend/groth16"
-	"github.com/consensys/gnark/frontend"
-)
-
-// Circuit defines a simple circuit
-// x**3 + x + 5 == y
-type Circuit struct {
-	// struct tags on a variable is optional
-	// default uses variable name and secret visibility.
-	X frontend.Variable `gnark:"x"`
-	Y frontend.Variable `gnark:",public"`
-}
-
-// Define declares the circuit constraints
-// x**3 + x + 5 == y
-func (circuit *Circuit) Define(curveID ecc.ID, api frontend.API) error {
-	x3 := api.Mul(circuit.X, circuit.X, circuit.X)
-	api.AssertIsEqual(circuit.Y, api.Add(x3, circuit.X, 5))
-	return nil
-}
-
-func main() {
-	var cubicCircuit Circuit
-	r1cs, err := frontend.Compile(ecc.BN254, backend.GROTH16, &cubicCircuit)
-	if err != nil {
-		return
-	}
-
-	pk, vk, err := groth16.Setup(r1cs)
-	if err != nil {
-		return
-	}
-
-	witness := &Circuit{
-		X: frontend.Value(3),
-		Y: frontend.Value(35),
-	}
-	proof, err := groth16.Prove(r1cs, pk, witness)
-	if err != nil {
-		return
-	}
-
-	publicWitness := &Circuit{
-		Y: frontend.Value(35),
-	}
-
-	err = groth16.Verify(proof, vk, publicWitness)
-	if err != nil {
-		fmt.Printf("verification failed\n")
-		return
-	}
-	fmt.Printf("verification succeded\n")
-}
-
-====================/utils\compare\compare.go====================
-package compare
-
-====================/utils\merkle\mian.go====================
-package merkle
-
+package balance
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
-	"github.com/consensys/gnark-crypto/accumulator/merkletree"
 	"github.com/consensys/gnark-crypto/ecc"
-	bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/accumulator/merkle"
-	"github.com/consensys/gnark/std/hash/mimc"
-	"math/rand"
-	"time"
+	"github.com/gin-gonic/gin"
+	"net/http"
 )
-
-type merkleCircuit struct {
-	RootHash     frontend.Variable `gnark:",public"`
-	Path, Helper []frontend.Variable
+// 全局变量
+var b64pk, b64vk string
+var r1cs frontend.CompiledConstraintSystem
+var vk groth16.VerifyingKey
+var pk groth16.ProvingKey
+var expCircuit ExpCircuit
+type ExpCircuit struct {
+	X frontend.Variable
+	Y frontend.Variable
+	Z frontend.Variable
 }
-
-func (circuit *merkleCircuit) Define(curveID ecc.ID, api frontend.API) error {
-	hFunc, err := mimc.NewMiMC("seed", curveID, api)
-	if err != nil {
-		return err
-	}
-	merkle.VerifyProof(api, hFunc, circuit.RootHash, circuit.Path, circuit.Helper)
+func (circuit *ExpCircuit) Define(curveID ecc.ID, api frontend.API) error {
+	output := api.Add(circuit.X, circuit.Y)
+	api.AssertIsEqual(0, api.Sub(circuit.Z, output))
 	return nil
 }
-
-func randomStr(length int) string {
-	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	bytes := []byte(str)
-	result := []byte{}
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	for i := 0; i < length; i++ {
-		result = append(result, bytes[r.Intn(len(bytes))])
-	}
-	return string(result)
-}
-
-func main() {
-	var buf bytes.Buffer
-	for i := 0; i < 10; i++ {
-		buf.Write([]byte(randomStr(10)))
-	}
-
-	// build & verify proof for an elmt in the file
-	proofIndex := uint64(5)
-	segmentSize := 10
-	merkleRoot, merkleProof, numLeaves, err := merkletree.BuildReaderProof(&buf, bn254.NewMiMC("seed"), segmentSize, proofIndex)
-	if err != nil {
-		return
-	}
-	//fmt.Printf("numLeaves: %v\n", numLeaves)
-	//fmt.Printf("proof: %v\n", len(merkleProof))
-
-	proofHelper := merkle.GenerateProofHelper(merkleProof, proofIndex, numLeaves)
-
-	fmt.Printf("proofHelper: %v\n", proofHelper)
-
-	verified := merkletree.VerifyProof(bn254.NewMiMC("seed"), merkleRoot, merkleProof, proofIndex, numLeaves)
-	if !verified {
-		fmt.Printf("The merkle proof in plain go should pass")
-	}
-
-	// create cs
-	circuit := merkleCircuit{
-		Path:   make([]frontend.Variable, len(merkleProof)),
-		Helper: make([]frontend.Variable, len(merkleProof)-1),
-	}
-	r1cs, err := frontend.Compile(ecc.BN254, backend.GROTH16, &circuit)
+// init
+func init() {
+	fmt.Println("balance zkp init ...")
+	var err error
+	r1cs, err = frontend.Compile(ecc.BN254, backend.GROTH16, &expCircuit)
 	if err != nil {
 		fmt.Printf("Compile failed : %v\n", err)
 		return
 	}
-
-	pk, vk, err := groth16.Setup(r1cs)
+	pk, vk, err = groth16.Setup(r1cs)
 	if err != nil {
 		fmt.Printf("Setup failed\n")
 		return
 	}
-
-	witness := &merkleCircuit{
-		Path:     make([]frontend.Variable, len(merkleProof)),
-		Helper:   make([]frontend.Variable, len(merkleProof)-1),
-		RootHash: frontend.Value(merkleRoot),
+	var buf bytes.Buffer
+	pk.WriteTo(&buf)
+	b64pk = base64.StdEncoding.EncodeToString(buf.Bytes())
+	buf.Reset()
+	vk.WriteTo(&buf)
+	b64vk = base64.StdEncoding.EncodeToString(buf.Bytes())
+}
+func GetParams(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"vk": b64vk,
+		"pk": b64pk,
+	})
+}
+func Proof(c *gin.Context) {
+	x := c.Query("x")
+	y := c.Query("y")
+	z := c.Query("z")
+	witness := &ExpCircuit{
+		Y: frontend.Value(y),
+		X: frontend.Value(x),
+		Z: frontend.Value(z),
 	}
-	for i := 0; i < len(merkleProof); i++ {
-		witness.Path[i].Assign(merkleProof[i])
-	}
-	for i := 0; i < len(merkleProof)-1; i++ {
-		witness.Helper[i].Assign(proofHelper[i])
-	}
-
 	proof, err := groth16.Prove(r1cs, pk, witness)
 	if err != nil {
 		fmt.Printf("Prove failed： %v\n", err)
 		return
 	}
-
-	publicWitness := &merkleCircuit{
-		RootHash: frontend.Value(merkleRoot),
+	var buf bytes.Buffer
+	proof.WriteRawTo(&buf)
+	newproof := groth16.NewProof(ecc.BN254)
+	newproof.ReadFrom(&buf)
+	newproof.WriteRawTo(&buf)
+	publicWitness := &ExpCircuit{
+		Y: frontend.Value(y),
+		G: frontend.Value(g),
+		R: frontend.Value(r),
 	}
-	err = groth16.Verify(proof, vk, publicWitness)
+	err = groth16.Verify(newproof, vk, publicWitness)
 	if err != nil {
-		fmt.Printf("verification failed: %v\n", err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"data": "verification failed",
+		})
+		return
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"data": gin.H{
+				"proof": base64.StdEncoding.EncodeToString(buf.Bytes()),
+			},
+		})
 		return
 	}
-	fmt.Printf("verification succeded\n")
 }
-
-====================/utils\mimc\main.go====================
-package mimcpackage
-
+====================/utils\compare\compare.go====================
+package compare
 import (
+	"bytes"
+	"encoding/base64"
+	"fmt"
+	"github.com/consensys/gnark-crypto/ecc"
+	"github.com/consensys/gnark/backend"
+	"github.com/consensys/gnark/backend/groth16"
+	"github.com/consensys/gnark/frontend"
+	"github.com/gin-gonic/gin"
+	"net/http"
+)
+var b64pk, b64vk string
+var r1cs frontend.CompiledConstraintSystem
+var vk groth16.VerifyingKey
+var pk groth16.ProvingKey
+var expCircuit Circuit
+type Circuit struct {
+	X frontend.Variable
+	Y frontend.Variable `gnark:",public"`
+}
+func (circuit *Circuit) Define(curveID ecc.ID, api frontend.API) error {
+	api.AssertIsLessOrEqual(circuit.X, circuit.Y)
+	return nil
+}
+func init() {
+	fmt.Println("compare zkp init ...")
+	var err error
+	r1cs, err = frontend.Compile(ecc.BN254, backend.GROTH16, &expCircuit)
+	if err != nil {
+		fmt.Printf("Compile failed : %v\n", err)
+		return
+	}
+	pk, vk, err = groth16.Setup(r1cs)
+	if err != nil {
+		fmt.Printf("Setup failed\n")
+		return
+	}
+	var buf bytes.Buffer
+	pk.WriteTo(&buf)
+	b64pk = base64.StdEncoding.EncodeToString(buf.Bytes())
+	buf.Reset()
+	vk.WriteTo(&buf)
+	b64vk = base64.StdEncoding.EncodeToString(buf.Bytes())
+}
+func GetParams(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"vk": b64vk,
+		"pk": b64pk,
+	})
+}
+func Proof(c *gin.Context) {
+	x := c.Query("X")
+	y := c.Query("Y")
+	witness := &Circuit{
+		X: frontend.Value(x),
+		Y: frontend.Value(y),
+	}
+	proof, err := groth16.Prove(r1cs, pk, witness)
+	if err != nil {
+		fmt.Printf("Prove failed： %v\n", err)
+		return
+	}
+	var buf bytes.Buffer
+	proof.WriteRawTo(&buf)
+	newproof := groth16.NewProof(ecc.BN254)
+	newproof.ReadFrom(&buf)
+	newproof.WriteRawTo(&buf)
+	publicWitness := &Circuit{
+		Y: frontend.Value(y),
+	}
+	err = groth16.Verify(newproof, vk, publicWitness)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"data": "verification failed",
+		})
+		return
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"data": gin.H{
+				"proof": base64.StdEncoding.EncodeToString(buf.Bytes()),
+			},
+		})
+		return
+	}
+}
+====================/utils\mimc\main.go====================
+package mimc
+import (
+	"bytes"
+	"encoding/base64"
 	"fmt"
 	"github.com/consensys/gnark-crypto/ecc"
 	bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
@@ -187,21 +192,25 @@ import (
 	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/hash/mimc"
+	"github.com/gin-gonic/gin"
 	"math/big"
+	"net/http"
 )
-
+var b64pk, b64vk string
+var r1cs frontend.CompiledConstraintSystem
+var vk groth16.VerifyingKey
+var pk groth16.ProvingKey
+var expCircuit Circuit
 type Circuit struct {
 	PreImage frontend.Variable
 	Hash     frontend.Variable `gnark:",public"`
 }
-
 func (circuit *Circuit) Define(curveID ecc.ID, api frontend.API) error {
 	mimc, _ := mimc.NewMiMC("seed", curveID, api)
 	mimc.Write(circuit.PreImage)
 	api.AssertIsEqual(circuit.Hash, mimc.Sum())
 	return nil
 }
-
 func mimcHash(data []byte) string {
 	f := bn254.NewMiMC("seed")
 	f.Write(data)
@@ -209,28 +218,37 @@ func mimcHash(data []byte) string {
 	hashInt := big.NewInt(0).SetBytes(hash)
 	return hashInt.String()
 }
-
-func main() {
-	preImage := []byte{0x01, 0x02, 0x03}
-	hash := mimcHash(preImage)
-
-	fmt.Printf("hash: %s\n", hash)
-
-	var circuit Circuit
-	r1cs, err := frontend.Compile(ecc.BN254, backend.GROTH16, &circuit)
+func init() {
+	fmt.Println("user zkp init ...")
+	var err error
+	r1cs, err = frontend.Compile(ecc.BN254, backend.GROTH16, &expCircuit)
 	if err != nil {
 		fmt.Printf("Compile failed : %v\n", err)
 		return
 	}
-
-	pk, vk, err := groth16.Setup(r1cs)
+	pk, vk, err = groth16.Setup(r1cs)
 	if err != nil {
 		fmt.Printf("Setup failed\n")
 		return
 	}
-
+	var buf bytes.Buffer
+	pk.WriteTo(&buf)
+	b64pk = base64.StdEncoding.EncodeToString(buf.Bytes())
+	buf.Reset()
+	vk.WriteTo(&buf)
+	b64vk = base64.StdEncoding.EncodeToString(buf.Bytes())
+}
+func GetParams(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"vk": b64vk,
+		"pk": b64pk,
+	})
+}
+func proof(c *gin.Context) {
+	preimage := c.Query("preimage")
+	hash := c.Query("hash")
 	witness := &Circuit{
-		PreImage: frontend.Value(preImage),
+		PreImage: frontend.Value(preimage),
 		Hash:     frontend.Value(hash),
 	}
 	proof, err := groth16.Prove(r1cs, pk, witness)
@@ -238,22 +256,31 @@ func main() {
 		fmt.Printf("Prove failed： %v\n", err)
 		return
 	}
-
+	var buf bytes.Buffer
+	proof.WriteRawTo(&buf)
+	newproof := groth16.NewProof(ecc.BN254)
+	newproof.ReadFrom(&buf)
+	newproof.WriteRawTo(&buf)
 	publicWitness := &Circuit{
 		Hash: frontend.Value(hash),
 	}
-
-	err = groth16.Verify(proof, vk, publicWitness)
+	err = groth16.Verify(newproof, vk, publicWitness)
 	if err != nil {
-		fmt.Printf("verification failed: %v\n", err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"data": "verification failed",
+		})
+		return
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"data": gin.H{
+				"proof": base64.StdEncoding.EncodeToString(buf.Bytes()),
+			},
+		})
 		return
 	}
-	fmt.Printf("verification succeded\n")
 }
-
 ====================/utils\rsa\rsa.go====================
 package rsa
-
 import (
 	"crypto"
 	"crypto/rand"
@@ -265,31 +292,25 @@ import (
 	"errors"
 	"fmt"
 )
-
 func main() {
 	//rsa 密钥文件产生
 	fmt.Println("-------------------------------获取RSA公私钥-----------------------------------------")
 	prvKey, pubKey := GenRsaKey()
 	fmt.Println(string(prvKey))
 	fmt.Println(string(pubKey))
-
-	fmt.Println("-------------------------------进行签名与验证操作-----------------------------------------")
-	var data = "卧了个槽，这么神奇的吗？？！！！  ԅ(¯﹃¯ԅ) ！！！！！！）"
+	var data = "xxx"
 	fmt.Println("对消息进行签名操作...")
 	signData := RsaSignWithSha256([]byte(data), prvKey)
 	fmt.Println("消息的签名信息： ", hex.EncodeToString(signData))
 	fmt.Println("\n对签名信息进行验证...")
 	if RsaVerySignWithSha256([]byte(data), signData, pubKey) {
-		fmt.Println("签名信息验证成功，确定是正确私钥签名！！")
+		fmt.Println("签名信息验证成功")
 	}
-
-	fmt.Println("-------------------------------进行加密解密操作-----------------------------------------")
 	ciphertext := RsaEncrypt([]byte(data), pubKey)
 	fmt.Println("公钥加密后的数据：", hex.EncodeToString(ciphertext))
 	sourceData := RsaDecrypt(ciphertext, prvKey)
 	fmt.Println("私钥解密后的数据：", string(sourceData))
 }
-
 //RSA公钥私钥产生
 func GenRsaKey() (prvkey, pubkey []byte) {
 	// 生成私钥文件
@@ -315,7 +336,6 @@ func GenRsaKey() (prvkey, pubkey []byte) {
 	pubkey = pem.EncodeToMemory(block)
 	return
 }
-
 //签名
 func RsaSignWithSha256(data []byte, keyBytes []byte) []byte {
 	h := sha256.New()
@@ -330,16 +350,13 @@ func RsaSignWithSha256(data []byte, keyBytes []byte) []byte {
 		fmt.Println("ParsePKCS8PrivateKey err", err)
 		panic(err)
 	}
-
 	signature, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, hashed)
 	if err != nil {
 		fmt.Printf("Error from signing: %s\n", err)
 		panic(err)
 	}
-
 	return signature
 }
-
 //验证
 func RsaVerySignWithSha256(data, signData, keyBytes []byte) bool {
 	block, _ := pem.Decode(keyBytes)
@@ -350,7 +367,6 @@ func RsaVerySignWithSha256(data, signData, keyBytes []byte) bool {
 	if err != nil {
 		panic(err)
 	}
-
 	hashed := sha256.Sum256(data)
 	err = rsa.VerifyPKCS1v15(pubKey.(*rsa.PublicKey), crypto.SHA256, hashed[:], signData)
 	if err != nil {
@@ -358,7 +374,6 @@ func RsaVerySignWithSha256(data, signData, keyBytes []byte) bool {
 	}
 	return true
 }
-
 // 公钥加密
 func RsaEncrypt(data, keyBytes []byte) []byte {
 	//解密pem格式的公钥
@@ -380,7 +395,6 @@ func RsaEncrypt(data, keyBytes []byte) []byte {
 	}
 	return ciphertext
 }
-
 // 私钥解密
 func RsaDecrypt(ciphertext, keyBytes []byte) []byte {
 	//获取私钥
@@ -400,10 +414,8 @@ func RsaDecrypt(ciphertext, keyBytes []byte) []byte {
 	}
 	return data
 }
-
 ====================/utils\user\user.go====================
 package user
-
 import (
 	"bytes"
 	"encoding/base64"
@@ -415,27 +427,21 @@ import (
 	"math/big"
 	"math/rand"
 	"net/http"
-
 	"github.com/gin-gonic/gin"
-
 	"server_gin/utils/rsa"
 )
-
 // 全局变量
 var b64pk, b64vk string
 var r1cs frontend.CompiledConstraintSystem
 var vk groth16.VerifyingKey
 var pk groth16.ProvingKey
 var expCircuit ExpCircuit
-
 type ExpCircuit struct {
 	Y frontend.Variable `gnark:",public"`
 	G frontend.Variable `gnark:",public"`
 	R frontend.Variable `gnark:",public"`
-
 	X frontend.Variable
 }
-
 func (circuit *ExpCircuit) Define(curveID ecc.ID, api frontend.API) error {
 	//number of bits of exponent
 	const bitSize = 256
@@ -450,7 +456,6 @@ func (circuit *ExpCircuit) Define(curveID ecc.ID, api frontend.API) error {
 	api.AssertIsEqual(circuit.Y, api.Mul(circuit.R, output))
 	return nil
 }
-
 // init
 func init() {
 	fmt.Println("user zkp init ...")
@@ -465,43 +470,35 @@ func init() {
 		fmt.Printf("Setup failed\n")
 		return
 	}
-
 	var buf bytes.Buffer
 	pk.WriteTo(&buf)
 	b64pk = base64.StdEncoding.EncodeToString(buf.Bytes())
 	buf.Reset()
 	vk.WriteTo(&buf)
 	b64vk = base64.StdEncoding.EncodeToString(buf.Bytes())
-
 }
-
 func GetParams(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"vk": b64vk,
 		"pk": b64pk,
 	})
 }
-
 func Register(c *gin.Context) {
 	passwd := c.Query("passwd")
-
 	if len(passwd) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"data": "empty passwd",
 		})
 		return
 	}
-
 	g := big.NewInt(3)
 	//
 	x := new(big.Int)
 	y := new(big.Int)
 	p := new(big.Int)
 	r := new(big.Int)
-
 	r.SetUint64(rand.Uint64())
 	x.SetBytes([]byte(passwd))
-
 	p, ok := p.SetString("109441214359196376111232028726286375442741822002080171718491020932879042478085", 10)
 	if !ok {
 		fmt.Println("SetString: error")
@@ -511,7 +508,6 @@ func Register(c *gin.Context) {
 	tmp.Exp(g, x, p)
 	tmp.Mul(tmp, r)
 	y.Mod(tmp, p)
-
 	witness := &ExpCircuit{
 		Y: frontend.Value(y),
 		G: frontend.Value(g),
@@ -525,21 +521,16 @@ func Register(c *gin.Context) {
 	}
 	var buf bytes.Buffer
 	proof.WriteRawTo(&buf)
-
 	newproof := groth16.NewProof(ecc.BN254)
 	newproof.ReadFrom(&buf)
 	newproof.WriteRawTo(&buf)
-
 	publicWitness := &ExpCircuit{
 		Y: frontend.Value(y),
 		G: frontend.Value(g),
 		R: frontend.Value(r),
 	}
-
 	err = groth16.Verify(newproof, vk, publicWitness)
-
 	sk, pk := rsa.GenRsaKey()
-
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"data": "verification failed",
@@ -557,43 +548,33 @@ func Register(c *gin.Context) {
 		})
 		return
 	}
-
 }
-
 func Login(c *gin.Context) {
-
 	// proof base64
-
 	proof := c.Query("proof")
 	userpk := c.Query("userpk")
 	r := c.Query("r")
-
 	if len(proof) == 0 || len(userpk) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "empty params",
 		})
 		return
 	}
-
 	userpkint := new(big.Int)
 	userpkint.SetString(userpk, 10)
-
 	rand := new(big.Int)
 	rand.SetString(r, 10)
-
 	publicWitness := &ExpCircuit{
 		Y: frontend.Value(userpkint),
 		G: frontend.Value(big.NewInt(3)),
 		R: frontend.Value(rand),
 	}
-
 	userproof := groth16.NewProof(ecc.BN254)
 	proofbytes, _ := base64.StdEncoding.DecodeString(proof)
 	userproof.ReadFrom(bytes.NewBuffer(proofbytes))
-
 	err := groth16.Verify(userproof, vk, publicWitness)
 	if err != nil {
-		fmt.Println("Proof err: ",err)
+		fmt.Println("Proof err: ", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err,
 		})
@@ -605,10 +586,8 @@ func Login(c *gin.Context) {
 		return
 	}
 }
-
-====================/test\testcubic.go====================
+====================/test\testbalance.go====================
 package main
-
 import (
 	"fmt"
 	"github.com/consensys/gnark-crypto/ecc"
@@ -616,7 +595,6 @@ import (
 	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/frontend"
 )
-
 // Circuit defines a simple circuit
 // x**3 + x + 5 == y
 type Circuit struct {
@@ -625,7 +603,6 @@ type Circuit struct {
 	X frontend.Variable `gnark:"x"`
 	Y frontend.Variable `gnark:",public"`
 }
-
 // Define declares the circuit constraints
 // x**3 + x + 5 == y
 func (circuit *Circuit) Define(curveID ecc.ID, api frontend.API) error {
@@ -633,19 +610,16 @@ func (circuit *Circuit) Define(curveID ecc.ID, api frontend.API) error {
 	api.AssertIsEqual(circuit.Y, api.Add(x3, circuit.X, 5))
 	return nil
 }
-
 func main() {
 	var cubicCircuit Circuit
 	r1cs, err := frontend.Compile(ecc.BN254, backend.GROTH16, &cubicCircuit)
 	if err != nil {
 		return
 	}
-
 	pk, vk, err := groth16.Setup(r1cs)
 	if err != nil {
 		return
 	}
-
 	witness := &Circuit{
 		X: frontend.Value(3),
 		Y: frontend.Value(35),
@@ -654,11 +628,9 @@ func main() {
 	if err != nil {
 		return
 	}
-
 	publicWitness := &Circuit{
 		Y: frontend.Value(35),
 	}
-
 	err = groth16.Verify(proof, vk, publicWitness)
 	if err != nil {
 		fmt.Printf("verification failed\n")
@@ -666,10 +638,60 @@ func main() {
 	}
 	fmt.Printf("verification succeded\n")
 }
-
+====================/test\testcubic.go====================
+package main
+import (
+	"fmt"
+	"github.com/consensys/gnark-crypto/ecc"
+	"github.com/consensys/gnark/backend"
+	"github.com/consensys/gnark/backend/groth16"
+	"github.com/consensys/gnark/frontend"
+)
+// Circuit defines a simple circuit
+// x**3 + x + 5 == y
+type Circuit struct {
+	// struct tags on a variable is optional
+	// default uses variable name and secret visibility.
+	X frontend.Variable `gnark:"x"`
+	Y frontend.Variable `gnark:",public"`
+}
+// Define declares the circuit constraints
+// x**3 + x + 5 == y
+func (circuit *Circuit) Define(curveID ecc.ID, api frontend.API) error {
+	x3 := api.Mul(circuit.X, circuit.X, circuit.X)
+	api.AssertIsEqual(circuit.Y, api.Add(x3, circuit.X, 5))
+	return nil
+}
+func main() {
+	var cubicCircuit Circuit
+	r1cs, err := frontend.Compile(ecc.BN254, backend.GROTH16, &cubicCircuit)
+	if err != nil {
+		return
+	}
+	pk, vk, err := groth16.Setup(r1cs)
+	if err != nil {
+		return
+	}
+	witness := &Circuit{
+		X: frontend.Value(3),
+		Y: frontend.Value(35),
+	}
+	proof, err := groth16.Prove(r1cs, pk, witness)
+	if err != nil {
+		return
+	}
+	publicWitness := &Circuit{
+		Y: frontend.Value(35),
+	}
+	err = groth16.Verify(proof, vk, publicWitness)
+	if err != nil {
+		fmt.Printf("verification failed\n")
+		return
+	}
+	fmt.Printf("verification succeded\n")
+}
 ====================/test\testexp.go====================
 package main
-
 import (
 	"fmt"
 	"github.com/consensys/gnark-crypto/ecc"
@@ -678,35 +700,27 @@ import (
 	"github.com/consensys/gnark/frontend"
 	"math/big"
 )
-
 type ExpCircuit struct {
 	Y frontend.Variable `gnark:",public"`
 	G frontend.Variable `gnark:",public"`
 	R frontend.Variable `gnark:",public"`
-
 	X frontend.Variable
 }
-
 func (circuit *ExpCircuit) Define(curveID ecc.ID, api frontend.API) error {
 	//number of bits of exponent
 	const bitSize = 256
-
 	// specify constraints
 	output := api.Constant(1)
 	bits := api.ToBinary(circuit.X, bitSize)
 	multiply := circuit.G
-
 	for i := 0; i < len(bits); i++ {
 		output = api.Select(bits[i], api.Mul(output, multiply), output)
 		multiply = api.Mul(multiply, multiply)
 	}
 	api.AssertIsEqual(circuit.Y, api.Mul(circuit.R, output))
-
 	return nil
 }
-
 func main() {
-
 	var expCircuit ExpCircuit
 	r1cs, err := frontend.Compile(ecc.BN254, backend.GROTH16, &expCircuit)
 	if err != nil {
@@ -718,14 +732,12 @@ func main() {
 		fmt.Printf("Setup failed\n")
 		return
 	}
-
 	g := big.NewInt(3)
 	//
 	x := new(big.Int)
 	y := new(big.Int)
 	r := new(big.Int)
 	p := new(big.Int)
-
 	x.SetString("123123", 10)
 	r.SetString("123123", 10)
 	p, ok := p.SetString("109441214359196376111232028726286375442741822002080171718491020932879042478085", 10)
@@ -737,7 +749,6 @@ func main() {
 	tmp.Exp(g, x, p)
 	tmp.Mul(tmp, r)
 	y.Mod(tmp, p)
-
 	witness := &ExpCircuit{
 		Y: frontend.Value(y),
 		G: frontend.Value(g),
@@ -749,64 +760,213 @@ func main() {
 		fmt.Printf("Prove failed： %v\n", err)
 		return
 	}
-
 	fmt.Println(y);
-
 	publicWitness := &ExpCircuit{
 		Y: frontend.Value(y),
 		G: frontend.Value(g),
 		R: frontend.Value(r),
 	}
-
 	err = groth16.Verify(proof, vk, publicWitness)
-
 	if err == nil {
 		fmt.Println("good proof")
 	} else {
 		fmt.Println("proof error")
 	}
-
 }
-
+====================/test\testmerkle.go====================
+package main
+import (
+	"bytes"
+	"fmt"
+	"github.com/consensys/gnark-crypto/accumulator/merkletree"
+	"github.com/consensys/gnark-crypto/ecc"
+	bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+	"github.com/consensys/gnark/backend"
+	"github.com/consensys/gnark/backend/groth16"
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/accumulator/merkle"
+	"github.com/consensys/gnark/std/hash/mimc"
+	"math/rand"
+	"time"
+)
+type merkleCircuit struct {
+	RootHash     frontend.Variable `gnark:",public"`
+	Path, Helper []frontend.Variable
+}
+func (circuit *merkleCircuit) Define(curveID ecc.ID, api frontend.API) error {
+	hFunc, err := mimc.NewMiMC("seed", curveID, api)
+	if err != nil {
+		return err
+	}
+	merkle.VerifyProof(api, hFunc, circuit.RootHash, circuit.Path, circuit.Helper)
+	return nil
+}
+func randomStr(length int) string {
+	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	bytes := []byte(str)
+	result := []byte{}
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	for i := 0; i < length; i++ {
+		result = append(result, bytes[r.Intn(len(bytes))])
+	}
+	return string(result)
+}
+func main() {
+	var buf bytes.Buffer
+	for i := 0; i < 10; i++ {
+		buf.Write([]byte(randomStr(10)))
+	}
+	// build & verify proof for an elmt in the file
+	proofIndex := uint64(5)
+	segmentSize := 10
+	merkleRoot, merkleProof, numLeaves, err := merkletree.BuildReaderProof(&buf, bn254.NewMiMC("seed"), segmentSize, proofIndex)
+	if err != nil {
+		return
+	}
+	//fmt.Printf("numLeaves: %v\n", numLeaves)
+	//fmt.Printf("proof: %v\n", len(merkleProof))
+	proofHelper := merkle.GenerateProofHelper(merkleProof, proofIndex, numLeaves)
+	fmt.Printf("proofHelper: %v\n", proofHelper)
+	verified := merkletree.VerifyProof(bn254.NewMiMC("seed"), merkleRoot, merkleProof, proofIndex, numLeaves)
+	if !verified {
+		fmt.Printf("The merkle proof in plain go should pass")
+	}
+	// create cs
+	circuit := merkleCircuit{
+		Path:   make([]frontend.Variable, len(merkleProof)),
+		Helper: make([]frontend.Variable, len(merkleProof)-1),
+	}
+	r1cs, err := frontend.Compile(ecc.BN254, backend.GROTH16, &circuit)
+	if err != nil {
+		fmt.Printf("Compile failed : %v\n", err)
+		return
+	}
+	pk, vk, err := groth16.Setup(r1cs)
+	if err != nil {
+		fmt.Printf("Setup failed\n")
+		return
+	}
+	witness := &merkleCircuit{
+		Path:     make([]frontend.Variable, len(merkleProof)),
+		Helper:   make([]frontend.Variable, len(merkleProof)-1),
+		RootHash: frontend.Value(merkleRoot),
+	}
+	for i := 0; i < len(merkleProof); i++ {
+		witness.Path[i].Assign(merkleProof[i])
+	}
+	for i := 0; i < len(merkleProof)-1; i++ {
+		witness.Helper[i].Assign(proofHelper[i])
+	}
+	proof, err := groth16.Prove(r1cs, pk, witness)
+	if err != nil {
+		fmt.Printf("Prove failed： %v\n", err)
+		return
+	}
+	publicWitness := &merkleCircuit{
+		RootHash: frontend.Value(merkleRoot),
+	}
+	err = groth16.Verify(proof, vk, publicWitness)
+	if err != nil {
+		fmt.Printf("verification failed: %v\n", err)
+		return
+	}
+	fmt.Printf("verification succeded\n")
+}
+====================/test\testmimc.go====================
+package main
+import (
+	"fmt"
+	"github.com/consensys/gnark-crypto/ecc"
+	bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+	"github.com/consensys/gnark/backend"
+	"github.com/consensys/gnark/backend/groth16"
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/hash/mimc"
+	"math/big"
+)
+type Circuit struct {
+	PreImage frontend.Variable
+	Hash     frontend.Variable `gnark:",public"`
+}
+func (circuit *Circuit) Define(curveID ecc.ID, api frontend.API) error {
+	mimc, _ := mimc.NewMiMC("seed", curveID, api)
+	mimc.Write(circuit.PreImage)
+	api.AssertIsEqual(circuit.Hash, mimc.Sum())
+	return nil
+}
+func mimcHash(data []byte) string {
+	f := bn254.NewMiMC("seed")
+	f.Write(data)
+	hash := f.Sum(nil)
+	hashInt := big.NewInt(0).SetBytes(hash)
+	return hashInt.String()
+}
+func main() {
+	preImage := []byte{0x01, 0x02, 0x03}
+	hash := mimcHash(preImage)
+	fmt.Printf("hash: %s\n", hash)
+	var circuit Circuit
+	r1cs, err := frontend.Compile(ecc.BN254, backend.GROTH16, &circuit)
+	if err != nil {
+		fmt.Printf("Compile failed : %v\n", err)
+		return
+	}
+	pk, vk, err := groth16.Setup(r1cs)
+	if err != nil {
+		fmt.Printf("Setup failed\n")
+		return
+	}
+	witness := &Circuit{
+		PreImage: frontend.Value(preImage),
+		Hash:     frontend.Value(hash),
+	}
+	proof, err := groth16.Prove(r1cs, pk, witness)
+	if err != nil {
+		fmt.Printf("Prove failed： %v\n", err)
+		return
+	}
+	publicWitness := &Circuit{
+		Hash: frontend.Value(hash),
+	}
+	err = groth16.Verify(proof, vk, publicWitness)
+	if err != nil {
+		fmt.Printf("verification failed: %v\n", err)
+		return
+	}
+	fmt.Printf("verification succeded\n")
+}
 ====================/test\testuser.py====================
-
 g = 3
 y = 97444002411876298130544283918750258378152496134548429480494475530319735181241
 r = 123123
 x = 123123
 p = 109441214359196376111232028726286375442741822002080171718491020932879042478085
-
-
 test = r * pow(g, x, p) % p
 assert (test == y)
-
 import requests
 import base64
-
 r = requests.get('http://127.0.0.1:7070/user/register?passwd=333').json()['data']
 proof = r['proof']
 userpk = r['userpk']
 r = r['r']
-
 print(proof)
 print(userpk)
 print(r)
-
 r = requests.get('http://127.0.0.1:7070/user/login', params = {
     "r":r,
     "proof":proof,
     "userpk": userpk
 })
 print(r.text)
-
-
-
 ====================/router\main.go====================
 package router
-
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	"server_gin/utils/balance"
+	"server_gin/utils/compare"
+	"server_gin/utils/mimc"
+)
 import "server_gin/utils/user"
-
 func LoadRouter(e *gin.Engine) {
 	router := e.Group("/user")
 	{
@@ -815,5 +975,603 @@ func LoadRouter(e *gin.Engine) {
 		router.GET("/login", user.Login)
 		router.GET("/delete", user.Login)
 	}
+	router2 := e.Group("/balance")
+	{
+		router2.GET("/params", balance.GetParams)
+		router2.GET("/proof", balance.Proof)
+	}
+	router3 := e.Group("/compare")
+	{
+		router3.GET("/params", compare.GetParams)
+		router3.GET("/proof", compare.Proof)
+	}
+	router4 := e.Group("/mimc")
+	{
+		router4.GET("/params", mimc.GetParams)
+		router4.GET("/proof", mimc.Proof)
+	}
 }
-
+// eslint-disable-next-line strict
+const utils = require('./utils');
+function privacykey(id){
+	return 'privacy:' + id;
+}
+function commitKey(id){
+	return 'commit:' + id;
+}
+function nullKey(id){
+	return 'null:' + id;
+}
+const totalSupply = 'totalSupply';
+async function updatetotalSupply(ctx, amount){
+	await utils.putState(ctx, privacykey(totalSupply), amount);
+}
+exports.commitCount = async function(ctx) {
+	let r = await utils.getALlStatus(ctx, 'commit');
+	return JSON.parse(r).length;
+};
+exports.getAllCommit = async function(ctx) {
+	return await utils.getALlStatus(ctx, 'commit');
+};
+exports.init = async function(ctx) {
+	await updatetotalSupply(ctx, 0);
+};
+'use strict';
+const sinon = require('sinon');
+const chai = require('chai');
+const sinonChai = require('sinon-chai');
+const expect = chai.expect;
+const {Context} = require('fabric-contract-api');
+const {ChaincodeStub, ClientIdentity} = require('fabric-shim');
+const AssetTransfer = require('../lib/assetTransferEvents.js');
+let assert = sinon.assert;
+chai.use(sinonChai);
+function getOrderno(_date) {
+	const date = _date;
+	let Y = date.getFullYear();
+	let M = (date.getMonth() + 1 < 10 ? '0' + (date.getMonth() + 1) : date.getMonth() + 1);
+	let D = (date.getDate() < 10 ? '0' + (date.getDate()) : date.getDate());
+	let h = (date.getHours() < 10 ? '0' + date.getHours() : date.getHours());
+	let m = (date.getMinutes() < 10 ? '0' + date.getMinutes() : date.getMinutes());
+	let s = (date.getSeconds() < 10 ? '0' + date.getSeconds() : date.getSeconds());
+	return Y + M + D + h + m + s;
+}
+let sleep = function (time) {
+	return new Promise((resolve) => {
+		setTimeout(resolve, time);
+	});
+};
+describe('Asset Transfer Events Tests', () => {
+	let transactionContext, chaincodeStub, clientIdentity;
+	beforeEach(() => {
+		transactionContext = new Context();
+		chaincodeStub = sinon.createStubInstance(ChaincodeStub);
+		chaincodeStub.getMspID.returns('org1');
+		transactionContext.setChaincodeStub(chaincodeStub);
+		clientIdentity = sinon.createStubInstance(ClientIdentity);
+		clientIdentity.getMSPID.returns('org1');
+		transactionContext.clientIdentity = clientIdentity;
+		chaincodeStub.putState.callsFake((key, value) => {
+			if (!chaincodeStub.states) {
+				chaincodeStub.states = {};
+			}
+			chaincodeStub.states[key] = value;
+		});
+		chaincodeStub.getState.callsFake(async (key) => {
+			let ret;
+			if (chaincodeStub.states) {
+				ret = chaincodeStub.states[key];
+			}
+			return Promise.resolve(ret);
+		});
+		chaincodeStub.deleteState.callsFake(async (key) => {
+			if (chaincodeStub.states) {
+				delete chaincodeStub.states[key];
+			}
+			return Promise.resolve(key);
+		});
+		// getDateTimestamp mock
+		chaincodeStub.getDateTimestamp.callsFake(() => {
+			return new Date();
+		});
+		// trx mock
+		chaincodeStub.getTxID.callsFake(() => {
+			return '8ab8f29eda6985326159b4968ddf7daf1cafe4116fc0be3341dad98848f79d2b';
+		});
+		chaincodeStub.getStateByRange.callsFake(async () => {
+			function* internalGetStateByRange() {
+				if (chaincodeStub.states) {
+					// Shallow copy
+					const copied = Object.assign({}, chaincodeStub.states);
+					for (let key in copied) {
+						yield {key: key, value: copied[key]};
+					}
+				}
+			}
+			return Promise.resolve(internalGetStateByRange());
+		});
+	});
+	describe('Test erc20', () => {
+		it('should return success on info ', async () => {
+			let assetTransfer = new AssetTransfer();
+			expect('HotelToken').to.eql((await assetTransfer.tokenName(transactionContext)));
+			expect('HTN').to.eql((await assetTransfer.Symbol(transactionContext)));
+		});
+		it('should return success on InitLedger ', async () => {
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+			expect(0).to.eq((await assetTransfer.balanceOf(transactionContext, 'totalSupply')));
+			expect(0).to.eql(await assetTransfer.totalSupply(transactionContext));
+		});
+		it('should return error on InitLedger ', async () => {
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+			expect(0).to.eq((await assetTransfer.balanceOf(transactionContext, 'alice')));
+		});
+		it('should return success on InitLedger ', async () => {
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+			await assetTransfer.initUser(transactionContext, 'alice');
+			expect(0).to.eq((await assetTransfer.balanceOf(transactionContext, 'alice')));
+		});
+		it('should return success on mint user alice ', async () => {
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+			await assetTransfer.mint(transactionContext, 'alice', 10);
+			expect(10).to.eql((await assetTransfer.balanceOf(transactionContext, 'alice')));
+			expect(10).to.eql((await assetTransfer.totalSupply(transactionContext)));
+		});
+		it('should return success on mint user alice twice ', async () => {
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+			await assetTransfer.mint(transactionContext, 'alice', 10);
+			await assetTransfer.mint(transactionContext, 'alice', 10);
+			expect(20).to.eql((await assetTransfer.balanceOf(transactionContext, 'alice')));
+			expect(20).to.eql((await assetTransfer.totalSupply(transactionContext)));
+		});
+		it('should return error on transfer alice to bob', async () => {
+			// chaincodeStub.putState.rejects('User alice does not have enough token');
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+			await assetTransfer.mint(transactionContext, 'alice', '10');
+			expect(10).to.eql((await assetTransfer.balanceOf(transactionContext, 'alice')));
+			expect(10).to.eql((await assetTransfer.totalSupply(transactionContext)));
+			try {
+				await assetTransfer.transfer(transactionContext, 'alice', 'bob', 11);
+				assert.fail('transfer should have failed');
+			} catch (err) {
+				expect(err.message).to.equal('User alice does not have enough token');
+			}
+		});
+		it('should return success on transfer alice to bob', async () => {
+			// chaincodeStub.putState.rejects('User alice does not have enough token');
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+			await assetTransfer.mint(transactionContext, 'alice', '10');
+			expect(10).to.eql((await assetTransfer.balanceOf(transactionContext, 'alice')));
+			expect(10).to.eql((await assetTransfer.totalSupply(transactionContext)));
+			await assetTransfer.transfer(transactionContext, 'alice', 'bob', '5');
+			expect(5).to.eql((await assetTransfer.balanceOf(transactionContext, 'alice')));
+			expect(5).to.eql((await assetTransfer.balanceOf(transactionContext, 'bob')));
+		});
+		it('should return success on tow user', async () => {
+			// chaincodeStub.putState.rejects('User alice does not have enough token');
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+			await assetTransfer.mint(transactionContext, 'alice', '10');
+			expect(10).to.eql((await assetTransfer.balanceOf(transactionContext, 'alice')));
+			expect(10).to.eql((await assetTransfer.totalSupply(transactionContext)));
+			await assetTransfer.transfer(transactionContext, 'alice', 'bob', '5');
+			expect(5).to.eql((await assetTransfer.balanceOf(transactionContext, 'alice')));
+			expect(5).to.eql((await assetTransfer.balanceOf(transactionContext, 'bob')));
+			let exp = [
+				{key: 'hotelaccount', value: 0},
+				{key: 'alice', value: 5},
+				{key: 'bob', value: 5}
+			];
+			let r = await assetTransfer.getTokenList(transactionContext);
+			expect(JSON.stringify(exp)).to.eql(r);
+		});
+	});
+	describe('Test order', () => {
+		it('should return success on addorder', async () => {
+			let assetTransfer = new AssetTransfer();
+			let orderno = await assetTransfer.addOrder(transactionContext, '1', 'alice', '100', '{}');
+			let exp = {
+				key: orderno,
+				value: {
+					orderno: getOrderno(new Date()),
+					timestamp: parseInt(new Date().getTime() / 1000),
+					trx: '8ab8f29eda6985326159b4968ddf7daf1cafe4116fc0be3341dad98848f79d2b',
+					houseid: '1',
+					user: 'alice',
+					price: '100',
+					liver: '{}',
+					status: '待付款'
+				}
+			};
+			expect(JSON.stringify(exp)).to.eq((await assetTransfer.getOrder(transactionContext, orderno)));
+		});
+		it('should return success on deleteorder', async () => {
+			let assetTransfer = new AssetTransfer();
+			const time = new Date();
+			let orderno = getOrderno(time);
+			try {
+				await assetTransfer.getOrder(transactionContext, orderno);
+				assert.fail('fail');
+			} catch (err) {
+				expect(err.message).to.equal(`The asset order:${orderno} does not exist`);
+			}
+			orderno = await assetTransfer.addOrder(transactionContext, '1', 'alice', '100', '{}');
+			let exp = {
+				key: orderno,
+				value: {
+					orderno: orderno,
+					timestamp: parseInt(time.getTime() / 1000),
+					trx: '8ab8f29eda6985326159b4968ddf7daf1cafe4116fc0be3341dad98848f79d2b',
+					houseid: '1',
+					user: 'alice',
+					price: '100',
+					liver: '{}',
+					status: '待付款'
+				}
+			};
+			expect(JSON.stringify(exp)).to.eq((await assetTransfer.getOrder(transactionContext, orderno)));
+			await assetTransfer.deleteOrder(transactionContext, orderno);
+			try {
+				await assetTransfer.getOrder(transactionContext, orderno);
+				assert.fail('fail');
+			} catch (err) {
+				expect(err.message).to.equal(`The asset order:${orderno} does not exist`);
+			}
+			// expect(JSON.stringify(exp)).to.eq(());
+		});
+		it('should return success on getAllOrder', async () => {
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.addOrder(transactionContext, '1', 'alice', '100', '{}');
+			// await sleep(1000);
+			// await assetTransfer.addOrder(transactionContext, '1', 'alice', '100', '{}');
+			await assetTransfer.getAllorder(transactionContext);
+		});
+	});
+	describe('Test user', () => {
+		it('should return success on addUser', async () => {
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+			await assetTransfer.mint(transactionContext, 'alice', '10');
+			await assetTransfer.addOrder(transactionContext, '1', 'alice', '100', '{}');
+			expect(0).to.eq((await assetTransfer.getUserCount(transactionContext)));
+			await assetTransfer.reigster(transactionContext, '123', '456', '{}', '123');
+			expect(1).to.eq((await assetTransfer.getUserCount(transactionContext)));
+			let exp = {
+				key: '123',
+				value: {
+					id: 1,
+					pk: '123',
+					r: '456',
+					enc_pk: '123',
+					ext: '{}',
+					lastproof: ''
+				}
+			};
+			expect(JSON.stringify(exp)).to.eq((await assetTransfer.getUser(transactionContext, '123')));
+			try{
+				await assetTransfer.deleteUser(transactionContext, '123');
+			}catch (err) {
+				expect(err.message).to.equal('The asset user:123 does not exist');
+			}
+		});
+	});
+	describe('Test payorder', () => {
+		it('should return success on payorder', async () => {
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+			await assetTransfer.mint(transactionContext, 'alice', '200');
+			let orderno = await assetTransfer.addOrder(transactionContext, '1', 'alice', '100', '{}');
+			await assetTransfer.payOrder(transactionContext, orderno, 'erc20', 'alice');
+			expect(100).to.eql((await assetTransfer.balanceOf(transactionContext, 'alice')));
+			expect(100).to.eql((await assetTransfer.balanceOf(transactionContext, 'hotelaccount')));
+			let r = await assetTransfer.getOrder(transactionContext, orderno);
+			r = JSON.parse(r);
+			expect('已支付').to.eq(r.value.status);
+		});
+	});
+	describe('Test comment', () => {
+		it('should return success on comment', async () => {
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+			await assetTransfer.mint(transactionContext, 'alice', '200');
+			let orderno = await assetTransfer.addOrder(transactionContext, '1', 'alice', '100', '{}');
+			await assetTransfer.payOrder(transactionContext, orderno, 'erc20', 'alice');
+			expect(100).to.eql((await assetTransfer.balanceOf(transactionContext, 'alice')));
+			expect(100).to.eql((await assetTransfer.balanceOf(transactionContext, 'hotelaccount')));
+			let r = await assetTransfer.getOrder(transactionContext, orderno);
+			await assetTransfer.addComment(transactionContext, orderno, 5, 'nice');
+			r = await assetTransfer.getOrder(transactionContext, orderno);
+			r = JSON.parse(r);
+			expect('已评论').to.eq(r.value.status);
+			r = await assetTransfer.getAllComment(transactionContext);
+			console.log(r);
+		});
+	});
+	describe('Test privacy', () => {
+		it('should return success on mint', async () => {
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+			await assetTransfer.privateMint(transactionContext, 'xx', 100, 'xx');
+			let r = await assetTransfer.privatetotalSupply(transactionContext);
+			expect(100).to.eql(parseInt(r));
+			console.log((await assetTransfer.getAllCommit(transactionContext)));
+			console.log((await assetTransfer.commitCount(transactionContext)));
+		});
+	});
+});
+package merkle
+import (
+	"bytes"
+	"encoding/base64"
+	"fmt"
+	"github.com/consensys/gnark-crypto/accumulator/merkletree"
+	"github.com/consensys/gnark-crypto/ecc"
+	bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+	"github.com/consensys/gnark/backend"
+	"github.com/consensys/gnark/backend/groth16"
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/accumulator/merkle"
+	"github.com/consensys/gnark/std/hash/mimc"
+	"github.com/gin-gonic/gin"
+	"math/rand"
+	"net/http"
+	"time"
+)
+var b64pk, b64vk string
+var r1cs frontend.CompiledConstraintSystem
+var vk groth16.VerifyingKey
+var pk groth16.ProvingKey
+var expCircuit merkleCircuit
+type merkleCircuit struct {
+	RootHash     frontend.Variable `gnark:",public"`
+	Path, Helper []frontend.Variable
+}
+func (circuit *merkleCircuit) Define(curveID ecc.ID, api frontend.API) error {
+	hFunc, err := mimc.NewMiMC("seed", curveID, api)
+	if err != nil {
+		return err
+	}
+	merkle.VerifyProof(api, hFunc, circuit.RootHash, circuit.Path, circuit.Helper)
+	return nil
+}
+func randomStr(length int) string {
+	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	bytes := []byte(str)
+	result := []byte{}
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	for i := 0; i < length; i++ {
+		result = append(result, bytes[r.Intn(len(bytes))])
+	}
+	return string(result)
+}
+// init
+func init() {
+	fmt.Println("user zkp init ...")
+	var err error
+	r1cs, err = frontend.Compile(ecc.BN254, backend.GROTH16, &expCircuit)
+	if err != nil {
+		fmt.Printf("Compile failed : %v\n", err)
+		return
+	}
+	pk, vk, err = groth16.Setup(r1cs)
+	if err != nil {
+		fmt.Printf("Setup failed\n")
+		return
+	}
+	var buf bytes.Buffer
+	pk.WriteTo(&buf)
+	b64pk = base64.StdEncoding.EncodeToString(buf.Bytes())
+	buf.Reset()
+	vk.WriteTo(&buf)
+	b64vk = base64.StdEncoding.EncodeToString(buf.Bytes())
+}
+func GetParams(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"vk": b64vk,
+		"pk": b64pk,
+	})
+}
+func Proof() {
+	var buf bytes.Buffer
+	for i := 0; i < 10; i++ {
+		buf.Write([]byte(randomStr(10)))
+	}
+	// build & verify proof for an elmt in the file
+	proofIndex := uint64(5)
+	segmentSize := 10
+	merkleRoot, merkleProof, numLeaves, err := merkletree.BuildReaderProof(&buf, bn254.NewMiMC("seed"), segmentSize, proofIndex)
+	if err != nil {
+		return
+	}
+	//fmt.Printf("numLeaves: %v\n", numLeaves)
+	//fmt.Printf("proof: %v\n", len(merkleProof))
+	proofHelper := merkle.GenerateProofHelper(merkleProof, proofIndex, numLeaves)
+	fmt.Printf("proofHelper: %v\n", proofHelper)
+	verified := merkletree.VerifyProof(bn254.NewMiMC("seed"), merkleRoot, merkleProof, proofIndex, numLeaves)
+	if !verified {
+		fmt.Printf("The merkle proof in plain go should pass")
+	}
+	// create cs
+	circuit := merkleCircuit{
+		Path:   make([]frontend.Variable, len(merkleProof)),
+		Helper: make([]frontend.Variable, len(merkleProof)-1),
+	}
+	r1cs, err := frontend.Compile(ecc.BN254, backend.GROTH16, &circuit)
+	if err != nil {
+		fmt.Printf("Compile failed : %v\n", err)
+		return
+	}
+	pk, vk, err := groth16.Setup(r1cs)
+	if err != nil {
+		fmt.Printf("Setup failed\n")
+		return
+	}
+	witness := &merkleCircuit{
+		Path:     make([]frontend.Variable, len(merkleProof)),
+		Helper:   make([]frontend.Variable, len(merkleProof)-1),
+		RootHash: frontend.Value(merkleRoot),
+	}
+	for i := 0; i < len(merkleProof); i++ {
+		witness.Path[i].Assign(merkleProof[i])
+	}
+	for i := 0; i < len(merkleProof)-1; i++ {
+		witness.Helper[i].Assign(proofHelper[i])
+	}
+	proof, err := groth16.Prove(r1cs, pk, witness)
+	if err != nil {
+		fmt.Printf("Prove failed： %v\n", err)
+		return
+	}
+	publicWitness := &merkleCircuit{
+		RootHash: frontend.Value(merkleRoot),
+	}
+	err = groth16.Verify(proof, vk, publicWitness)
+	if err != nil {
+		fmt.Printf("verification failed: %v\n", err)
+		return
+	}
+	fmt.Printf("verification succeded\n")
+}
+exports.mint = async function(ctx, commit, pi, v, rho, enc) {
+	const commitid = await this.commitCount(ctx) + 1;
+	await utils.putState(ctx, commitKey(commitid), {
+		commit: commit,
+		enc_g: enc
+	});
+	await updatetotalSupply(ctx, (await this.totalSupply(ctx)) + v);
+};
+/* eslint-disable quote-props */
+'use strict';
+const { Contract } = require('fabric-contract-api');
+const erc20 = require('./erc20');
+const order = require('./order');
+const user = require('./user');
+const privacy = require('./privacy');
+class mycontract extends Contract {
+	// init
+	async InitLedger(ctx) {
+		await erc20.updateBalance(ctx, 'totalSupply', 0);
+		await erc20.updateBalance(ctx, 'hotelaccount', 0);
+		await privacy.init(ctx);
+		return ctx.stub.getTxID();
+	}
+	// user contract
+	async reigster (ctx, pk, r, ext, enc_pk){
+		await user.register(ctx, pk, r, ext, enc_pk);
+		return ctx.stub.getTxID();
+	}
+	async getAllUser(ctx){
+		return await user.getALlUser(ctx);
+	}
+	async getUserCount(ctx){
+		return await user.getUsercount(ctx);
+	}
+	async getUser(ctx, pk){
+		return await user.getUser(ctx, pk);
+	}
+	async deleteUser(ctx, pk){
+		await user.deleteUser(ctx, pk);
+		return ctx.stub.getTxID();
+	}
+	// private token
+	async commitCount(ctx){
+		return privacy.commitCount(ctx);
+	}
+	async getAllCommit(ctx){
+		return privacy.getAllCommit(ctx);
+	}
+	async privateMint(ctx, commit, value, enc){
+		await privacy.mint(ctx, commit, '', parseInt(value), '', enc);
+		return ctx.stub.getTxID();
+	}
+	async privatetotalSupply(ctx){
+		return await privacy.totalSupply(ctx);
+	}
+	// order contract
+	async addOrder(ctx, houseid, user, price, arg) {
+		return await order.addOrder(ctx, houseid, user, price, arg);
+	}
+	async getOrder(ctx, id) {
+		return await order.getOrder(ctx, id);
+	}
+	async deleteOrder(ctx, id) {
+		return await order.deleteOrder(ctx, id);
+	}
+	async getAllorder(ctx) {
+		return await order.getAllorder(ctx);
+	}
+	async payOrder(ctx, orderno, type, user){
+		await order.payOrder(ctx, orderno, type, user);
+		return ctx.stub.getTxID();
+	}
+	async addComment(ctx, orderno, grade, comment){
+		await order.addComment(ctx, orderno, grade, comment);
+		return ctx.stub.getTxID();
+	}
+	async getAllComment(ctx){
+		return await order.getAllComment(ctx);
+	}
+	// erc20 contract
+	async tokenName(ctx) {
+		return 'HotelToken';
+	}
+	async Symbol(ctx) {
+		return 'HTN';
+	}
+	async totalSupply(ctx) {
+		return await erc20.totalSupply(ctx);
+	}
+	async balanceOf(ctx, user) {
+		return  await erc20.balanceOf(ctx, user);
+	}
+	async initUser(ctx, user){
+		await erc20.initUser(ctx, user);
+		return ctx.stub.getTxID();
+	}
+	async mint(ctx, user, amount) {
+		await erc20.mint(ctx, user, amount);
+		return ctx.stub.getTxID();
+	}
+	async transfer(ctx, from, to, amount) {
+		await erc20.transfer(ctx, from, to, amount);
+		return ctx.stub.getTxID();
+	}
+	async getTokenList(ctx) {
+		return await erc20.getAlltokenList(ctx);
+	}
+	// test
+	async hello(ctx){
+		return 'Hello world';
+	}
+	async test(ctx, arg){
+		return {
+			'返回交易提案中指定的交易ID':ctx.stub.getTxID(),
+			'返回交易提案中指定的通道ID':ctx.stub.getChannelID(),
+			'交易创建的时间戳': ctx.stub.getDateTimestamp(),
+			'typeof 时间戳': typeof ctx.stub.getDateTimestamp(),
+			'返回交易的绑定信息，如一些临时信息，以避免重复性攻击':ctx.stub.getBinding(),
+			'getTransient()':ctx.stub.getTransient(),
+			'getArgs': ctx.stub.getArgs(),
+			'typeof getArgs': typeof ctx.stub.getArgs(),
+			'arg': arg,
+			'typeof arg': typeof arg,
+			// "返回与交易提案相关的签名身份信息":ctx.stub.getSignedProposal(),
+			// "返回该交易提交者的身份信息":ctx.stub.getCreator(),
+		};
+	}
+}
+module.exports = mycontract;
+exports.getAllNull = async function(ctx) {
+	return await utils.getALlStatus(ctx, 'null');
+};
+exports.totalSupply = async function(ctx) {
+	let r = await utils.readState(ctx, privacykey(totalSupply));
+	return JSON.parse(r).value;
+};

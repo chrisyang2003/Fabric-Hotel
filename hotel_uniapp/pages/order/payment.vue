@@ -178,8 +178,10 @@ export default {
 				type: this.paytype,
 			};
 
-
-			if (this.total > this.balance){
+			console.log(this.total);
+			console.log(this.balance);
+			
+			if (parseInt(this.total) > parseInt(this.balance)){
 				this.$u.toast('余额不足!!!')
 			}else{
 				let res = await this.$api.orderPay(data);

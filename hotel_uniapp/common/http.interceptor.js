@@ -61,10 +61,10 @@ const install = (Vue, vm) => {
 	// 请求拦截，配置Token等参数
 	Vue.prototype.$u.http.interceptor.request = (config) => {		
 		// 在需要登录的接口，请求前判断token 是否存在,不存在则到登录
-		if (noLoginUrl.indexOf(config.url) == -1 && !vm.vuex_token) {
-			vm.$u.route('/pages/login/login');
-			return false;
-		}
+		// if (noLoginUrl.indexOf(config.url) == -1 && !vm.vuex_token) {
+		// 	vm.$u.route('/pages/login/login');
+		// 	return false;
+		// }
 		config.header.Authorization = 'Bearer ' + vm.vuex_token;
 		console.log('header token:',config.header.Authorization)
 		

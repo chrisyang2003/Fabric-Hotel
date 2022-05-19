@@ -25,6 +25,7 @@
 export default {
 	onLoad() {
 		this.getBalance()
+		this.getpb()
 	},
 	data() {
 		return {
@@ -39,6 +40,16 @@ export default {
 				console.log(res)
 			})
 		},
+
+		getpb(){
+			console.log('@@@@')
+			this.$api.getpbalance().then(res => {
+				this.ptn = res.balance
+
+			})
+		},
+
+
 
 		submitp(){
 

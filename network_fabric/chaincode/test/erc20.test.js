@@ -351,4 +351,19 @@ describe('Asset Transfer Events Tests', () => {
 			console.log(r);
 		});
 	});
+
+	describe('Test privacy', () => {
+		it('should return success on mint', async () => {
+			let assetTransfer = new AssetTransfer();
+			await assetTransfer.InitLedger(transactionContext);
+
+			await assetTransfer.privateMint(transactionContext, 'xx', 100, 'xx');
+			let r = await assetTransfer.privatetotalSupply(transactionContext);
+			expect(100).to.eql(parseInt(r));
+
+			console.log((await assetTransfer.getAllCommit(transactionContext)));
+			console.log((await assetTransfer.commitCount(transactionContext)));
+
+		});
+	});
 });

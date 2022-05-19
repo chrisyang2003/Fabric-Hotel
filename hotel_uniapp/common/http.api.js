@@ -87,6 +87,10 @@ const install = (Vue, vm) => {
 	vm.$api.getCondition		= async (params = {}) => await vm.$u.get('http://chrisyy.top:5000/addons/booking/house/condition', params);
 
 	// 获取用户余额
+	vm.$api.getpbalance			= async (params = {}) => await vm.$u.get('http://chrisyy.top:3000/user/wallet/balance', params);
+	vm.$api.getp			= async (params = {}) => await vm.$u.get('http://chrisyy.top:3000/user/wallet/mint', params);
+
+
 	vm.$api.getBalance			= async (params = {}) => await vm.$u.get('http://chrisyy.top:3000/erc20/balance', params);
 	vm.$api.getErc20			= async (params = {}) => await vm.$u.get('http://chrisyy.top:3000/erc20/mint', params);
 

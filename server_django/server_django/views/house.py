@@ -44,7 +44,7 @@ def houseList(requset):
     r = requests.get('http://chrisyy.top:3000/order/getall').json()
     r = [i['value'] for i in r]
     noempty = [int(i['houseid']) for i in r]
-
+    print(noempty)
 
     data = []
     for item in house.objects.all():

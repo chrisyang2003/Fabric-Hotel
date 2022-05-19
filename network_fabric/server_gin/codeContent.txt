@@ -1,4 +1,407 @@
-====================/utils/user/user.go====================
+====================/utils\balance\main.go====================
+package balancepackage
+
+import (
+	"fmt"
+	"github.com/consensys/gnark-crypto/ecc"
+	"github.com/consensys/gnark/backend"
+	"github.com/consensys/gnark/backend/groth16"
+	"github.com/consensys/gnark/frontend"
+)
+
+// Circuit defines a simple circuit
+// x**3 + x + 5 == y
+type Circuit struct {
+	// struct tags on a variable is optional
+	// default uses variable name and secret visibility.
+	X frontend.Variable `gnark:"x"`
+	Y frontend.Variable `gnark:",public"`
+}
+
+// Define declares the circuit constraints
+// x**3 + x + 5 == y
+func (circuit *Circuit) Define(curveID ecc.ID, api frontend.API) error {
+	x3 := api.Mul(circuit.X, circuit.X, circuit.X)
+	api.AssertIsEqual(circuit.Y, api.Add(x3, circuit.X, 5))
+	return nil
+}
+
+func main() {
+	var cubicCircuit Circuit
+	r1cs, err := frontend.Compile(ecc.BN254, backend.GROTH16, &cubicCircuit)
+	if err != nil {
+		return
+	}
+
+	pk, vk, err := groth16.Setup(r1cs)
+	if err != nil {
+		return
+	}
+
+	witness := &Circuit{
+		X: frontend.Value(3),
+		Y: frontend.Value(35),
+	}
+	proof, err := groth16.Prove(r1cs, pk, witness)
+	if err != nil {
+		return
+	}
+
+	publicWitness := &Circuit{
+		Y: frontend.Value(35),
+	}
+
+	err = groth16.Verify(proof, vk, publicWitness)
+	if err != nil {
+		fmt.Printf("verification failed\n")
+		return
+	}
+	fmt.Printf("verification succeded\n")
+}
+
+====================/utils\compare\compare.go====================
+package compare
+
+====================/utils\merkle\mian.go====================
+package merkle
+
+import (
+	"bytes"
+	"fmt"
+	"github.com/consensys/gnark-crypto/accumulator/merkletree"
+	"github.com/consensys/gnark-crypto/ecc"
+	bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+	"github.com/consensys/gnark/backend"
+	"github.com/consensys/gnark/backend/groth16"
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/accumulator/merkle"
+	"github.com/consensys/gnark/std/hash/mimc"
+	"math/rand"
+	"time"
+)
+
+type merkleCircuit struct {
+	RootHash     frontend.Variable `gnark:",public"`
+	Path, Helper []frontend.Variable
+}
+
+func (circuit *merkleCircuit) Define(curveID ecc.ID, api frontend.API) error {
+	hFunc, err := mimc.NewMiMC("seed", curveID, api)
+	if err != nil {
+		return err
+	}
+	merkle.VerifyProof(api, hFunc, circuit.RootHash, circuit.Path, circuit.Helper)
+	return nil
+}
+
+func randomStr(length int) string {
+	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	bytes := []byte(str)
+	result := []byte{}
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	for i := 0; i < length; i++ {
+		result = append(result, bytes[r.Intn(len(bytes))])
+	}
+	return string(result)
+}
+
+func main() {
+	var buf bytes.Buffer
+	for i := 0; i < 10; i++ {
+		buf.Write([]byte(randomStr(10)))
+	}
+
+	// build & verify proof for an elmt in the file
+	proofIndex := uint64(5)
+	segmentSize := 10
+	merkleRoot, merkleProof, numLeaves, err := merkletree.BuildReaderProof(&buf, bn254.NewMiMC("seed"), segmentSize, proofIndex)
+	if err != nil {
+		return
+	}
+	//fmt.Printf("numLeaves: %v\n", numLeaves)
+	//fmt.Printf("proof: %v\n", len(merkleProof))
+
+	proofHelper := merkle.GenerateProofHelper(merkleProof, proofIndex, numLeaves)
+
+	fmt.Printf("proofHelper: %v\n", proofHelper)
+
+	verified := merkletree.VerifyProof(bn254.NewMiMC("seed"), merkleRoot, merkleProof, proofIndex, numLeaves)
+	if !verified {
+		fmt.Printf("The merkle proof in plain go should pass")
+	}
+
+	// create cs
+	circuit := merkleCircuit{
+		Path:   make([]frontend.Variable, len(merkleProof)),
+		Helper: make([]frontend.Variable, len(merkleProof)-1),
+	}
+	r1cs, err := frontend.Compile(ecc.BN254, backend.GROTH16, &circuit)
+	if err != nil {
+		fmt.Printf("Compile failed : %v\n", err)
+		return
+	}
+
+	pk, vk, err := groth16.Setup(r1cs)
+	if err != nil {
+		fmt.Printf("Setup failed\n")
+		return
+	}
+
+	witness := &merkleCircuit{
+		Path:     make([]frontend.Variable, len(merkleProof)),
+		Helper:   make([]frontend.Variable, len(merkleProof)-1),
+		RootHash: frontend.Value(merkleRoot),
+	}
+	for i := 0; i < len(merkleProof); i++ {
+		witness.Path[i].Assign(merkleProof[i])
+	}
+	for i := 0; i < len(merkleProof)-1; i++ {
+		witness.Helper[i].Assign(proofHelper[i])
+	}
+
+	proof, err := groth16.Prove(r1cs, pk, witness)
+	if err != nil {
+		fmt.Printf("Prove failed： %v\n", err)
+		return
+	}
+
+	publicWitness := &merkleCircuit{
+		RootHash: frontend.Value(merkleRoot),
+	}
+	err = groth16.Verify(proof, vk, publicWitness)
+	if err != nil {
+		fmt.Printf("verification failed: %v\n", err)
+		return
+	}
+	fmt.Printf("verification succeded\n")
+}
+
+====================/utils\mimc\main.go====================
+package mimcpackage
+
+import (
+	"fmt"
+	"github.com/consensys/gnark-crypto/ecc"
+	bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+	"github.com/consensys/gnark/backend"
+	"github.com/consensys/gnark/backend/groth16"
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/hash/mimc"
+	"math/big"
+)
+
+type Circuit struct {
+	PreImage frontend.Variable
+	Hash     frontend.Variable `gnark:",public"`
+}
+
+func (circuit *Circuit) Define(curveID ecc.ID, api frontend.API) error {
+	mimc, _ := mimc.NewMiMC("seed", curveID, api)
+	mimc.Write(circuit.PreImage)
+	api.AssertIsEqual(circuit.Hash, mimc.Sum())
+	return nil
+}
+
+func mimcHash(data []byte) string {
+	f := bn254.NewMiMC("seed")
+	f.Write(data)
+	hash := f.Sum(nil)
+	hashInt := big.NewInt(0).SetBytes(hash)
+	return hashInt.String()
+}
+
+func main() {
+	preImage := []byte{0x01, 0x02, 0x03}
+	hash := mimcHash(preImage)
+
+	fmt.Printf("hash: %s\n", hash)
+
+	var circuit Circuit
+	r1cs, err := frontend.Compile(ecc.BN254, backend.GROTH16, &circuit)
+	if err != nil {
+		fmt.Printf("Compile failed : %v\n", err)
+		return
+	}
+
+	pk, vk, err := groth16.Setup(r1cs)
+	if err != nil {
+		fmt.Printf("Setup failed\n")
+		return
+	}
+
+	witness := &Circuit{
+		PreImage: frontend.Value(preImage),
+		Hash:     frontend.Value(hash),
+	}
+	proof, err := groth16.Prove(r1cs, pk, witness)
+	if err != nil {
+		fmt.Printf("Prove failed： %v\n", err)
+		return
+	}
+
+	publicWitness := &Circuit{
+		Hash: frontend.Value(hash),
+	}
+
+	err = groth16.Verify(proof, vk, publicWitness)
+	if err != nil {
+		fmt.Printf("verification failed: %v\n", err)
+		return
+	}
+	fmt.Printf("verification succeded\n")
+}
+
+====================/utils\rsa\rsa.go====================
+package rsa
+
+import (
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/x509"
+	"encoding/hex"
+	"encoding/pem"
+	"errors"
+	"fmt"
+)
+
+func main() {
+	//rsa 密钥文件产生
+	fmt.Println("-------------------------------获取RSA公私钥-----------------------------------------")
+	prvKey, pubKey := GenRsaKey()
+	fmt.Println(string(prvKey))
+	fmt.Println(string(pubKey))
+
+	fmt.Println("-------------------------------进行签名与验证操作-----------------------------------------")
+	var data = "卧了个槽，这么神奇的吗？？！！！  ԅ(¯﹃¯ԅ) ！！！！！！）"
+	fmt.Println("对消息进行签名操作...")
+	signData := RsaSignWithSha256([]byte(data), prvKey)
+	fmt.Println("消息的签名信息： ", hex.EncodeToString(signData))
+	fmt.Println("\n对签名信息进行验证...")
+	if RsaVerySignWithSha256([]byte(data), signData, pubKey) {
+		fmt.Println("签名信息验证成功，确定是正确私钥签名！！")
+	}
+
+	fmt.Println("-------------------------------进行加密解密操作-----------------------------------------")
+	ciphertext := RsaEncrypt([]byte(data), pubKey)
+	fmt.Println("公钥加密后的数据：", hex.EncodeToString(ciphertext))
+	sourceData := RsaDecrypt(ciphertext, prvKey)
+	fmt.Println("私钥解密后的数据：", string(sourceData))
+}
+
+//RSA公钥私钥产生
+func GenRsaKey() (prvkey, pubkey []byte) {
+	// 生成私钥文件
+	privateKey, err := rsa.GenerateKey(rand.Reader, 1024)
+	if err != nil {
+		panic(err)
+	}
+	derStream := x509.MarshalPKCS1PrivateKey(privateKey)
+	block := &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: derStream,
+	}
+	prvkey = pem.EncodeToMemory(block)
+	publicKey := &privateKey.PublicKey
+	derPkix, err := x509.MarshalPKIXPublicKey(publicKey)
+	if err != nil {
+		panic(err)
+	}
+	block = &pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: derPkix,
+	}
+	pubkey = pem.EncodeToMemory(block)
+	return
+}
+
+//签名
+func RsaSignWithSha256(data []byte, keyBytes []byte) []byte {
+	h := sha256.New()
+	h.Write(data)
+	hashed := h.Sum(nil)
+	block, _ := pem.Decode(keyBytes)
+	if block == nil {
+		panic(errors.New("private key error"))
+	}
+	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	if err != nil {
+		fmt.Println("ParsePKCS8PrivateKey err", err)
+		panic(err)
+	}
+
+	signature, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, hashed)
+	if err != nil {
+		fmt.Printf("Error from signing: %s\n", err)
+		panic(err)
+	}
+
+	return signature
+}
+
+//验证
+func RsaVerySignWithSha256(data, signData, keyBytes []byte) bool {
+	block, _ := pem.Decode(keyBytes)
+	if block == nil {
+		panic(errors.New("public key error"))
+	}
+	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		panic(err)
+	}
+
+	hashed := sha256.Sum256(data)
+	err = rsa.VerifyPKCS1v15(pubKey.(*rsa.PublicKey), crypto.SHA256, hashed[:], signData)
+	if err != nil {
+		panic(err)
+	}
+	return true
+}
+
+// 公钥加密
+func RsaEncrypt(data, keyBytes []byte) []byte {
+	//解密pem格式的公钥
+	block, _ := pem.Decode(keyBytes)
+	if block == nil {
+		panic(errors.New("public key error"))
+	}
+	// 解析公钥
+	pubInterface, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		panic(err)
+	}
+	// 类型断言
+	pub := pubInterface.(*rsa.PublicKey)
+	//加密
+	ciphertext, err := rsa.EncryptPKCS1v15(rand.Reader, pub, data)
+	if err != nil {
+		panic(err)
+	}
+	return ciphertext
+}
+
+// 私钥解密
+func RsaDecrypt(ciphertext, keyBytes []byte) []byte {
+	//获取私钥
+	block, _ := pem.Decode(keyBytes)
+	if block == nil {
+		panic(errors.New("private key error!"))
+	}
+	//解析PKCS1格式的私钥
+	priv, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	if err != nil {
+		panic(err)
+	}
+	// 解密
+	data, err := rsa.DecryptPKCS1v15(rand.Reader, priv, ciphertext)
+	if err != nil {
+		panic(err)
+	}
+	return data
+}
+
+====================/utils\user\user.go====================
 package user
 
 import (
@@ -203,160 +606,68 @@ func Login(c *gin.Context) {
 	}
 }
 
-====================/utils/rsa/rsa.go====================
-package rsa
+====================/test\testcubic.go====================
+package main
 
 import (
-	"crypto"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/sha256"
-	"crypto/x509"
-	"encoding/hex"
-	"encoding/pem"
-	"errors"
 	"fmt"
+	"github.com/consensys/gnark-crypto/ecc"
+	"github.com/consensys/gnark/backend"
+	"github.com/consensys/gnark/backend/groth16"
+	"github.com/consensys/gnark/frontend"
 )
 
+// Circuit defines a simple circuit
+// x**3 + x + 5 == y
+type Circuit struct {
+	// struct tags on a variable is optional
+	// default uses variable name and secret visibility.
+	X frontend.Variable `gnark:"x"`
+	Y frontend.Variable `gnark:",public"`
+}
+
+// Define declares the circuit constraints
+// x**3 + x + 5 == y
+func (circuit *Circuit) Define(curveID ecc.ID, api frontend.API) error {
+	x3 := api.Mul(circuit.X, circuit.X, circuit.X)
+	api.AssertIsEqual(circuit.Y, api.Add(x3, circuit.X, 5))
+	return nil
+}
+
 func main() {
-	//rsa 密钥文件产生
-	fmt.Println("-------------------------------获取RSA公私钥-----------------------------------------")
-	prvKey, pubKey := GenRsaKey()
-	fmt.Println(string(prvKey))
-	fmt.Println(string(pubKey))
-
-	fmt.Println("-------------------------------进行签名与验证操作-----------------------------------------")
-	var data = "卧了个槽，这么神奇的吗？？！！！  ԅ(¯﹃¯ԅ) ！！！！！！）"
-	fmt.Println("对消息进行签名操作...")
-	signData := RsaSignWithSha256([]byte(data), prvKey)
-	fmt.Println("消息的签名信息： ", hex.EncodeToString(signData))
-	fmt.Println("\n对签名信息进行验证...")
-	if RsaVerySignWithSha256([]byte(data), signData, pubKey) {
-		fmt.Println("签名信息验证成功，确定是正确私钥签名！！")
+	var cubicCircuit Circuit
+	r1cs, err := frontend.Compile(ecc.BN254, backend.GROTH16, &cubicCircuit)
+	if err != nil {
+		return
 	}
 
-	fmt.Println("-------------------------------进行加密解密操作-----------------------------------------")
-	ciphertext := RsaEncrypt([]byte(data), pubKey)
-	fmt.Println("公钥加密后的数据：", hex.EncodeToString(ciphertext))
-	sourceData := RsaDecrypt(ciphertext, prvKey)
-	fmt.Println("私钥解密后的数据：", string(sourceData))
+	pk, vk, err := groth16.Setup(r1cs)
+	if err != nil {
+		return
+	}
+
+	witness := &Circuit{
+		X: frontend.Value(3),
+		Y: frontend.Value(35),
+	}
+	proof, err := groth16.Prove(r1cs, pk, witness)
+	if err != nil {
+		return
+	}
+
+	publicWitness := &Circuit{
+		Y: frontend.Value(35),
+	}
+
+	err = groth16.Verify(proof, vk, publicWitness)
+	if err != nil {
+		fmt.Printf("verification failed\n")
+		return
+	}
+	fmt.Printf("verification succeded\n")
 }
 
-//RSA公钥私钥产生
-func GenRsaKey() (prvkey, pubkey []byte) {
-	// 生成私钥文件
-	privateKey, err := rsa.GenerateKey(rand.Reader, 1024)
-	if err != nil {
-		panic(err)
-	}
-	derStream := x509.MarshalPKCS1PrivateKey(privateKey)
-	block := &pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: derStream,
-	}
-	prvkey = pem.EncodeToMemory(block)
-	publicKey := &privateKey.PublicKey
-	derPkix, err := x509.MarshalPKIXPublicKey(publicKey)
-	if err != nil {
-		panic(err)
-	}
-	block = &pem.Block{
-		Type:  "PUBLIC KEY",
-		Bytes: derPkix,
-	}
-	pubkey = pem.EncodeToMemory(block)
-	return
-}
-
-//签名
-func RsaSignWithSha256(data []byte, keyBytes []byte) []byte {
-	h := sha256.New()
-	h.Write(data)
-	hashed := h.Sum(nil)
-	block, _ := pem.Decode(keyBytes)
-	if block == nil {
-		panic(errors.New("private key error"))
-	}
-	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
-	if err != nil {
-		fmt.Println("ParsePKCS8PrivateKey err", err)
-		panic(err)
-	}
-
-	signature, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, hashed)
-	if err != nil {
-		fmt.Printf("Error from signing: %s\n", err)
-		panic(err)
-	}
-
-	return signature
-}
-
-//验证
-func RsaVerySignWithSha256(data, signData, keyBytes []byte) bool {
-	block, _ := pem.Decode(keyBytes)
-	if block == nil {
-		panic(errors.New("public key error"))
-	}
-	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
-	if err != nil {
-		panic(err)
-	}
-
-	hashed := sha256.Sum256(data)
-	err = rsa.VerifyPKCS1v15(pubKey.(*rsa.PublicKey), crypto.SHA256, hashed[:], signData)
-	if err != nil {
-		panic(err)
-	}
-	return true
-}
-
-// 公钥加密
-func RsaEncrypt(data, keyBytes []byte) []byte {
-	//解密pem格式的公钥
-	block, _ := pem.Decode(keyBytes)
-	if block == nil {
-		panic(errors.New("public key error"))
-	}
-	// 解析公钥
-	pubInterface, err := x509.ParsePKIXPublicKey(block.Bytes)
-	if err != nil {
-		panic(err)
-	}
-	// 类型断言
-	pub := pubInterface.(*rsa.PublicKey)
-	//加密
-	ciphertext, err := rsa.EncryptPKCS1v15(rand.Reader, pub, data)
-	if err != nil {
-		panic(err)
-	}
-	return ciphertext
-}
-
-// 私钥解密
-func RsaDecrypt(ciphertext, keyBytes []byte) []byte {
-	//获取私钥
-	block, _ := pem.Decode(keyBytes)
-	if block == nil {
-		panic(errors.New("private key error!"))
-	}
-	//解析PKCS1格式的私钥
-	priv, err := x509.ParsePKCS1PrivateKey(block.Bytes)
-	if err != nil {
-		panic(err)
-	}
-	// 解密
-	data, err := rsa.DecryptPKCS1v15(rand.Reader, priv, ciphertext)
-	if err != nil {
-		panic(err)
-	}
-	return data
-}
-
-====================/utils/compare/compare.go====================
-package compare
-
-====================/test/testexp.go====================
+====================/test\testexp.go====================
 package main
 
 import (
@@ -457,7 +768,7 @@ func main() {
 
 }
 
-====================/test/testuser.py====================
+====================/test\testuser.py====================
 
 g = 3
 y = 97444002411876298130544283918750258378152496134548429480494475530319735181241
@@ -490,7 +801,7 @@ print(r.text)
 
 
 
-====================/router/main.go====================
+====================/router\main.go====================
 package router
 
 import "github.com/gin-gonic/gin"

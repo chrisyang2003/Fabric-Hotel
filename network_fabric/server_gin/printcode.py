@@ -19,7 +19,7 @@ def notban(filename):
         return True
 
 
-log = open('codeContent.txt', 'w')
+log = open('codeContent.txt', 'w', encoding='utf-8')
 
 
 floder = ['./utils', './test', './router'
@@ -31,7 +31,12 @@ def main():
             print('\'' + j + '\'' + ',')
 
             log.write('='  * 20 + j[1:] + '='  * 20 + '\n')
-            log.write(open(j).read())
+
+            f = open(j, 'r', encoding='utf-8')
+            for z in f.readlines():
+                # print(z)
+                log.write(z)
+            # log.write()
             log.write('\n')
 
 

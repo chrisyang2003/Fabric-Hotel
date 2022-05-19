@@ -15,9 +15,12 @@ banlist = [
     './manage.py',
     './codeContent.txt',
     './db.sqlite3',
+<<<<<<< HEAD
     './server_django/asgi.py',
     './server_django/wsgi.py',
     './server_django/__init__.py',
+=======
+>>>>>>> 4de4cbb8b819915bf76dbfda994ff6b3ebc54812
 ]
 
 

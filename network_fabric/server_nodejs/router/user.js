@@ -103,7 +103,7 @@ router.get('/login', async (req, res, next) => {
 
   
 })
-
+let saveUser = {}
 
 router.get('/register', async (req, res, next) => {
   let a = res
@@ -128,6 +128,9 @@ router.get('/register', async (req, res, next) => {
     playload = {
       user: user.userpk
     }
+    saveUser[user.userpk] = passwd
+    console.log(saveUser);
+    
 
     a.json({
       data: { 
@@ -137,9 +140,26 @@ router.get('/register', async (req, res, next) => {
       }
     })
 
-    
   })
   
+})
+
+let wallet = {}
+router.get('/wallet/balance', async (req, res, next) => {
+  const user = req.user.user.toString()
+  const sk = saveUser[user]
+
+  console.log(sk, user)
+  console.log('save' ,saveUser);
+  
+
+  Math.floor(Math.random())
+
+
+  res.json({
+    code: 200
+  })
+
 })
 
 router.get('/userlist', async (req, res, next) => {

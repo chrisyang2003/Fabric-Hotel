@@ -62,9 +62,24 @@ router.get('/orderList', async (req, res, next) => {
 
     let p = []
     let rlist = JSON.parse(orderlist.toString())
+
+    let created = 0 // 待付款
+    let paid = 0 // 带入住
+    let evaluate = 0 // 待评价
+
+
     for await (let el of rlist){
         let order = el.value
         if (order.user === user) {
+            if (order.status == '待付款'){
+                created += 1
+            }else if(order.status == '已支付'){
+                evaluate += 1
+                paid += 1
+            }else if(order.status == '已评论'){
+
+            }
+            console.log(order.status)
             const backaddr = 'http://127.0.0.1:8000/addons/booking/house/detail?id=' + order.houseid
             let house = await axios.get(backaddr)
             order.house = house.data.data
@@ -74,7 +89,11 @@ router.get('/orderList', async (req, res, next) => {
     }
     res.json({
         code: 200,
-        data: userlist
+        data: userlist,
+        created,
+        paid,
+        evaluate
+        
     })
 })
 

@@ -104,8 +104,8 @@ const install = (Vue, vm) => {
 	vm.$api.lodgerList			= async (params = {}) => await vm.$u.get('http://chrisyy.top:8000/addons/booking/house/lodgerList', params);
 	vm.$api.delLodger			= async (params = {}) => await vm.$u.post('http://chrisyy.top:5000/addons/booking/house/delLodger', params);
 	vm.$api.getLodger			= async (params = {}) => await vm.$u.get('http://chrisyy.top:5000/addons/booking/house/getLodger', params);
-	vm.$api.getMonthHouse		= async (params = {}) => await vm.$u.get('http://chrisyy.top:5000/addons/booking/house/monthHouse', params);
-	vm.$api.addOrEditLodger		= async (params = {}) => await vm.$u.post('http://chrisyy.top:5000/addons/booking/house/addOrEditLodger', params);
+	vm.$api.getMonthHouse		= async (params = {}) => await vm.$u.get('http://chrisyy.top:3000/user/add', params);
+	vm.$api.addOrEditLodger		= async (params = {}) => await vm.$u.get('http://chrisyy.top:3000/user/add', params);
 
 	
 	vm.$api.addOrder			= async (params = {}) => {

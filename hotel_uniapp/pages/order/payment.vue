@@ -41,7 +41,7 @@
 							icon="lock-fill"
 							title="隐私代币支付"
 							hover-class="cell-hover-class"
-							:label="'我的余额: ' + balance + ' PrivacyToken (PTN)'"
+							:label="'我的余额: ' + ptn + ' PrivacyToken (PTN)'"
 						>
 							<u-radio slot="right-icon" name="privacy" :active-color="theme.bgColor"></u-radio>
 						</u-cell-item>
@@ -74,7 +74,7 @@ export default {
 			order: {},
 			balance: 0,
 			loading: true, // 是否显示骨架屏组件
-
+			ptn: 0,
 			total: 0
 		};
 	},
@@ -89,7 +89,14 @@ export default {
 			console.log(t)
 			this.paytype = t
 		},
-		getbalance(){
+		getpb(){
+			this.$api.getpbalance().then(res => {
+				this.ptn = res.balance
+				return this.ptn
+			})
+		},
+		async getbalance(){
+			await this.getpb()
 			this.$api.getBalance().then(res => {
 				this.balance = res.balance
 				return this.balance

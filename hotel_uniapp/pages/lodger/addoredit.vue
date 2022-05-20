@@ -5,15 +5,8 @@
 		<view class="bg-white u-p-30 u-skeleton-rect">
 			<u-form :model="form" ref="uForm">
 				<u-form-item label="姓名" label-width="130" prop="name" label-position="top"><u-input v-model="form.name" type="text" placeholder="请填写姓名" /></u-form-item>
-				<u-form-item label="证件类型" label-width="130" label-position="top">
-					<u-input type="select" :select-open="selectShow" v-model="form.typeName" placeholder="请选择证件类型" @click="selectShow = true"></u-input>
-				</u-form-item>
-				<u-form-item label="证件号码" label-width="130" label-position="top" prop="idnumber">
-					<u-input v-model="form.idnumber" type="text" placeholder="请填写证件号码" />
-				</u-form-item>
-				<u-form-item label="手机号码" label-width="130" label-position="top" prop="mobile">
-					<u-input v-model="form.mobile" type="text" placeholder="请填写手机号码" />
-				</u-form-item>
+				<u-form-item label="身份证号" label-width="130" prop="name" label-position="top"><u-input v-model="form.uid" type="text" placeholder="请输入年龄" /></u-form-item>
+
 			</u-form>
 		</view>
 		<view class="bg-white u-p-30 footer">

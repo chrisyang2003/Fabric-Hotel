@@ -57,6 +57,9 @@ exports.payOrder = async function(ctx, orderno, type, user){
 		await erc20.transfer(ctx, user, 'hotelaccount', price);
 		orderinfo.status = '已支付';
 		await utils.putState(ctx, orderkey(orderno), orderinfo);
+	}else{
+		orderinfo.status = '已支付';
+		await utils.putState(ctx, orderkey(orderno), orderinfo);
 	}
 };
 
@@ -64,7 +67,7 @@ function commentKey(id){
 	return 'comment:' + id;
 }
 exports.addComment = async function(ctx, orderno, grade, comment) {
-	
+
 	const orderinfo = JSON.parse((await this.getOrder(ctx, orderno))).value;
 	let save = {
 		orderno: orderno,

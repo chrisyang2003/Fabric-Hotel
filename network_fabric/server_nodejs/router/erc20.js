@@ -80,11 +80,9 @@ router.get('/balance', async (req, res, next) => {
     const contract = network.getContract('hotel');
 
     const user = req.user.user;
-    console.log(user);
     
     try {
         let r = await contract.evaluateTransaction('balanceOf', user);
-        console.log(r.toString())
 
         res.send({
             balance: r.toString()

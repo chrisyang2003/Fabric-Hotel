@@ -36,6 +36,7 @@ urlpatterns = [
 
     path('addons/booking/common/init', common.commonInit),
     path('addons/booking/house/lodgerList',common.lodgerList),
+    # path('addons/booking/house/addOrEditLodger', common.add),
 
     # store
     path('addons/booking/store/detail', store.detail),

@@ -22,3 +22,4 @@ def lodgerList(_):
 
 
     return JsonResponse(data)
+

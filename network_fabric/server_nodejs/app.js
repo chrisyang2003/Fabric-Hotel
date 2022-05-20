@@ -97,6 +97,8 @@ const auth = expressJwt({secret: 'secret12345'}).unless({
     '/erc20/transfer',
 
 
+
+
     '/erc20/mint'
   ]
 })

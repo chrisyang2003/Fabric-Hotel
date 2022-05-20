@@ -1,5 +1,9 @@
 from django.http import JsonResponse
 
+from model.hotelinfo import hotelinfo
+
+
+
 
 def defaultStore(request):
     _json = { "code": 1, "msg": "", "time": "1648997630", "data": { "id": 1, "name": "测试门店", "images": ["https://booking.demo.fastadmin.net/assets/addons/booking/img/swiper1.jpg", "https://booking.demo.fastadmin.net/assets/addons/booking/img/swiper2.jpg"], "phone": "19934358875", "latitude": "22.547", "longitude": "114.085947", "address": "成都郫都区", "is_more": True }}

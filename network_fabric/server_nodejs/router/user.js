@@ -66,28 +66,48 @@ router.get('/login', async (req, res, next) => {
   const passwdlogin = req.query.passwdLogin
   const passwd = req.query.passwd
   const proof = req.query.proof
-
+  
+  console.log("proof: ", proof)
 
   const network = await fabric.gateway('mychannel')
   const contract = network.getContract('hotel');
 
   console.log(user);
   
-  let r = await contract.evaluateTransaction('getUser', user)
-  usereslut = JSON.parse(r.toString())
-  console.log('r: ',usereslut.value.r)
+  
   try{
+    let rr = await contract.evaluateTransaction('getUser', user)
+    usereslut = JSON.parse(rr.toString())
+    console.log('r: ',usereslut.value.r)
+
     let r = await axios.get(zkpserver + '/user/login',{
       params:{
       userpk: user,
       proof, proof,
       r: usereslut.value.r
     }
-    } )
+    })
+    if (r.data.data == 'good'){
+      res.json({
+        code: 200,
+        msg: '登陆成功',
+        data: { 
+          token: jwt.sign({
+            user: user
+          }, key, { expiresIn: '1day' }),
+          user: user
+        }
+      })
+    }
+    else{
+      console.log(r.data)
+    }
 
+  
+  }catch(err){
     res.json({
-      code: 200,
-      msg: '登陆成功',
+      code: 0,
+      msg: '错误',
       data: { 
         token: jwt.sign({
           user: user
@@ -95,15 +115,27 @@ router.get('/login', async (req, res, next) => {
         user: user
       }
     })
-  
-  }catch(err){
 
   }
   
 
   
 })
+
+let loger = []
+router.get('/add', async (req, res, next) => {
+  console.log(req.query)
+
+  loger.push({
+    name: req.query.namq
+  })
+})
+
 let saveUser = {}
+
+saveUser = {
+  '27393592628221017761640242079373237524309564762416437247099845060159244442432': '123'
+}
 
 router.get('/register', async (req, res, next) => {
   let a = res
@@ -144,23 +176,106 @@ router.get('/register', async (req, res, next) => {
   
 })
 
-let wallet = {}
-router.get('/wallet/balance', async (req, res, next) => {
-  const user = req.user.user.toString()
+
+
+const SHA256 = require('crypto-js/sha256')
+
+let pow = Math.pow
+
+function commit(v, r){
+  p = 1133261442823444443917138265631
+  return (BigInt(3) ** BigInt(v) % BigInt(p)) * (BigInt(5) ** BigInt(r) % BigInt(p)) % BigInt(p)
+}
+
+function money(v, sk){
+  const r = Math.floor(Math.random() * 1000)
+  return{
+    isused: false,
+    value: v,
+    rho: r,
+    commit: commit(v, r),
+    commitHash: SHA256(commit(v, r)),
+    null: SHA256(sk + r.toString()),
+    time: new Date().getTime()
+  }
+}
+
+function randomString(e) {    
+  e = e || 32;
+  var t = "ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678",
+  a = t.length,
+  n = "";
+  for (i = 0; i < e; i++) n += t.charAt(Math.floor(Math.random() * a));
+  return n
+}
+
+let wallet = new Map()
+// let userwallet = []
+
+router.get('/wallet/mint', async (req, res, next) => {
+  
+  let user = req.user.user.toString()
   const sk = saveUser[user]
 
-  console.log(sk, user)
-  console.log('save' ,saveUser);
+
+  // let user = req.query.user
+  // let sk = req.query.sk
+
+  const network = await fabric.gateway('mychannel')
+  const contract = network.getContract('hotel');
+
+
+  console.log(user);
+
   
+  console.log(sk, user)
 
-  Math.floor(Math.random())
+  if(wallet.get(user) == undefined){
+    console.log('init user');
+    wallet.set(user, [])
+  }
+  let userwallet = wallet.get(user)
+  let cc = money(1000, sk)
+  userwallet.push(cc)
 
+  // async privateMint(ctx, commit, value, enc){
+  let trx = await contract.submitTransaction('privateMint', cc.commit, 1000, randomString(64))
 
+  
   res.json({
-    code: 200
+    code: 200,
+    msg: trx
   })
-
 })
+
+router.get('/wallet/balance', async (req, res, next) => {
+  const user = req.user.user.toString()
+  // console.log(user)
+  const sk = saveUser[user]
+
+  // let user = req.query.user
+  // let sk = req.query.sk
+
+  if(wallet.get(user) == undefined){
+    console.log('init user');
+    wallet.set(user, [])
+  }
+
+  let total = 0
+  wallet.get(user).forEach(element => {
+    total +=  element.value
+
+  });
+  // console.log(wallet.get(user));
+  
+  res.json({
+    code: 200,
+    balance: total
+  })
+})
+
+
+
 
 router.get('/userlist', async (req, res, next) => {
   const network = await fabric.gateway('mychannel')

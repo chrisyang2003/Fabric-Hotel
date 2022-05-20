@@ -10,15 +10,13 @@
             <el-input v-model="form.bio"></el-input>
           </el-form-item>
           <el-form-item label="电话">
-            <el-input v-model="form.tel"></el-input>
+            <el-input v-model="form.tele"></el-input>
           </el-form-item>
 
           <el-form-item label="酒店封面">
             <el-upload
               class="upload-demo"
               action="https://jsonplaceholder.typicode.com/posts/"
-              :on-preview="handlePreview"
-              :on-remove="handleRemove"
               :file-list="fileList"
               list-type="picture"
             >
@@ -28,6 +26,11 @@
               </div>
             </el-upload>
           </el-form-item>
+
+          <el-form-item>
+            <el-button type="primary" @click="save">保存</el-button>
+          </el-form-item>
+
         </el-form>
       </el-col>
     </el-row>
@@ -45,6 +48,11 @@ export default {
       },
       fileList: [{name: 'food.jpeg', url: 'http://chrisyy.top:5000/assets/addons/booking/img/swiper1.jpg'}]
     };
+  },
+  methods: {
+    save(){
+
+    }
   },
 };
 </script>

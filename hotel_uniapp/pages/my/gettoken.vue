@@ -15,7 +15,7 @@
 
 			<!-- <u--text type="primary" text="主色"></u--text> -->
 			<u-button class="bu" shape="square" :custom-style="{ backgroundColor: theme.bgColor, color: theme.color}" @click="submit">获取1000个 erc20</u-button>
-			<u-button class="bu" shape="square" :custom-style="{ backgroundColor: theme.bgColor, color: theme.color}" @click="submitp">获取1000个 隐私币</u-button>
+			<u-button class="bu" shape="square" :custom-style="{ backgroundColor: theme.bgColor, color: theme.color}" @click="submitP">获取1000个 隐私币</u-button>
 
 		</view>
 	</view>
@@ -63,8 +63,16 @@ export default {
 					this.$u.toast("获取成功")
 					
 					this.$u.route('/pages/my/gettoken')
-
+				}
+			})
+		},
+		submitP(){
+			this.$api.getp().then(res=>{
+				if (res.code){
+					this.$u.toast('成功'+ res.msg)
+					// this.$u.toast("获取成功")
 					
+					this.$u.route('/pages/my/gettoken')
 				}
 			})
 		}

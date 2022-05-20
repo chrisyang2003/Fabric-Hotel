@@ -9,7 +9,7 @@
 				<u-checkbox v-model="item.checked" :active-color="theme.bgColor" :name="item.id" @change="checkboxChange" >
 					<view class="u-p-l-30">
 						<view class="">姓名：{{ item.name }}</view>
-						<view class="u-tips-color">证件号码：{{ item.idnumber }}</view>
+						<!-- <view class="u-tips-color">证件号码：{{ item.idnumber }}</view> -->
 						<view class="u-tips-color">年龄：{{ item.age }}</view>
 
 					</view>

@@ -26,6 +26,12 @@
         </template>
       </el-table-column>
 
+      <el-table-column align="center" label="时间戳" min-width="20">
+        <template slot-scope="{ row }">
+          <span>{{ row.time }}</span>
+        </template>
+      </el-table-column>
+
    
     </el-table>
 

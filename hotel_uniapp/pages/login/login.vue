@@ -32,6 +32,7 @@
               :border="border"
               type="password"
               v-model="form.proof"
+              :maxlength="1000"
             ></u-input>
           </u-form-item>
 
@@ -60,7 +61,7 @@
         >
       </view>
       <view class="u-flex u-row-between u-tips-color u-m-t-10 u-p-20">
-        测试账号:admin 123456
+        测试账号:请用Postman生成
         <!-- <view class="" @click="goPage('/pages/login/forgetpwd')">忘记密码</view> -->
         <view class="" @click="goPage('/pages/login/register')">注册账号</view>
       </view>
@@ -115,13 +116,16 @@ export default {
     },
     goLogin: async function () {
       let res = await this.$api.goLogin(this.form);
+      console.log(res)
       if (!res.code) {
         this.$u.toast(res.msg);
         return;
+      }else{
+        this.$u.vuex("vuex_token", res.data.token);
+        this.$u.vuex("vuex_user", res.data.user || {});
+        this.$u.toast(res.msg)
       }
-      this.$u.vuex("vuex_token", res.data.token);
       
-      this.$u.vuex("vuex_user", res.data.user || {});
     //   this.success(2);
     },
   },
